@@ -1,19 +1,14 @@
-import sys
-import wave
-import vosk
-import json
+import assemblyai as aai
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 
-model = vosk.Model("vosk-model-en-us-0.22")  # Load the Vosk model
-wf = wave.open("test.wav", "rb")  # Open the WAV file
+aai.settings.api_key = API_KEY
+transcriber = aai.Transcriber()
 
-rec = vosk.KaldiRecognizer(model, wf.getframerate())  # Create recognizer
+transcript = transcriber.transcribe("./test.wav")
+# transcript = transcriber.transcribe("./my-local-audio-file.wav")
 
-while True:
-    data = wf.readframes(2500)  # Read a small chunk
-    if len(data) == 0:
-        break
-    if rec.AcceptWaveform(data):  # Process the chunk
-        print(json.loads(rec.Result()))  # Print result for this chunk
-
-print(json.loads(rec.FinalResult()))  # Final result after all chunks
+print(transcript.text)
