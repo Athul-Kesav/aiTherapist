@@ -20,7 +20,7 @@ def get_transcript(audio_file):
 
 def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     """
-    Process an audio file to extract waveform, pitch, intensity, and transcript.
+    Process an audio file to extract waveform, pitch, intensity
     
     Parameters:
       audio_file (str): Path to the input audio file.
@@ -39,7 +39,6 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
             - 'min_pitch': The minimum pitch (Hz) among valid frames.
             - 'max_pitch': The robust maximum pitch (95th percentile, Hz) among valid frames.
             - 'average_intensity': The average RMS intensity.
-            - 'transcript': The speech-to-text transcript of the audio.
     """
     # Load the audio file using librosa
     audio, sr = librosa.load(audio_file, sr=sr_target)
@@ -70,7 +69,7 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     average_intensity = np.mean(rms)
     
     # Get the transcript using speech recognition
-    transcript = get_transcript(audio_file)
+    # transcript = get_transcript(audio_file)
     
     # Package all the results into a dictionary
     results = {
@@ -84,7 +83,6 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
         "min_pitch": min_pitch,
         "max_pitch": max_pitch,
         "average_intensity": average_intensity,
-        "transcript": transcript,
     }
     return results
 
@@ -100,4 +98,3 @@ if __name__ == "__main__":
     print("Min Pitch: {:.2f} Hz".format(data["min_pitch"]))
     print("Max Pitch: {:.2f} Hz".format(data["max_pitch"]))
     print("Average Intensity: {:.4f}".format(data["average_intensity"]))
-    print("Transcript:", data["transcript"])
