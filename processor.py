@@ -4,6 +4,10 @@ from flask import Flask, request, jsonify
 import assemblyai as aai
 from dotenv import load_dotenv
 import os
+import cv2
+import time
+from deepface import DeepFace
+
 
 
 # import speech_recognition as sr
@@ -120,6 +124,55 @@ def analyze_audio():
     results = process_audio_file(filepath)
 
     return jsonify(results)
+
+@app.route('/analyze-video', methods=['POST'])
+
+def analyze_video():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files['file']
+    
+    # Ensure the "temp" directory exists
+    os.makedirs("temp", exist_ok=True)
+    filepath = "temp/temp_video.mp4"
+    file.save(filepath)
+
+    cap = cv2.VideoCapture(filepath)
+    if not cap.isOpened():
+        return jsonify({"error": "Failed to open video file"}), 400
+
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if frame_count <= 0:
+        cap.release()
+        return jsonify({"error": "Video file has no frames"}), 400
+
+    # Randomly sample frames (ensure we sample only when frames are available)
+    frame_indices = np.random.choice(frame_count, size=min(10, frame_count), replace=False)
+    emotions = []
+
+    for idx in frame_indices:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        ret, frame = cap.read()
+        if not ret:
+            continue
+        try:
+            result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
+            # DeepFace.analyze might return a dict or list depending on the version.
+            # Adjust accordingly if needed.
+            emotions.append(result[0]['dominant_emotion'] if isinstance(result, list) else result['dominant_emotion'])
+        except Exception as e:
+            print("Error analyzing frame:", e)
+            continue
+
+    cap.release()
+
+    if not emotions:
+        return jsonify({"error": "Could not detect emotions"}), 500
+
+    # Determine the dominant mood by taking the most frequent emotion
+    mood = max(set(emotions), key=emotions.count)
+    return jsonify({"mood": mood})
 
 # Example usage
 if __name__ == "__main__":
