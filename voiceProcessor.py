@@ -28,9 +28,6 @@ app = Flask(__name__)
 
 def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     
-    
-    # transcript = transcriber.transcribe("./my-local-audio-file.wav")
-
     """
     Process an audio file to extract waveform, pitch, intensity
     
@@ -53,11 +50,10 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
             - 'average_intensity': The average RMS intensity.
             - 'transcript': The transcript of the audio file.
     """
+    
+    
     # Load the audio file using librosa
     audio, sr = librosa.load(audio_file, sr=sr_target)
-    
-    # Create a time axis for the full waveform
-    # time_wave = np.linspace(0, len(audio) / sr, num=len(audio))
     
     # Estimate pitch using librosa.yin in the desired range (50-3000 Hz)
     pitches = librosa.yin(audio, fmin=50, fmax=3000, sr=sr, hop_length=hop_length)
