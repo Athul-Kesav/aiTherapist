@@ -5,7 +5,7 @@ from deepface import DeepFace
 # Open Webcam
 cap = cv2.VideoCapture(1)
 
-#last_checked = time.time()  # Track last analysis time
+last_checked = time.time()  # Track last analysis time
 dominant_emotion = "Scanning..."  # Default emotion
 
 while True:
@@ -13,23 +13,23 @@ while True:
     if not ret:
         break
     
-    #current_time = time.time()
+    current_time = time.time()
     
     # Run emotion detection every 3 seconds
-    #if current_time - last_checked >= 3:
-    try:
-        # Analyze emotion in the current frame
-        result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
+    if current_time - last_checked >= 3:
+        try:
+            # Analyze emotion in the current frame
+            result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
+            
+            # Get the dominant emotion
+            dominant_emotion = result[0]['dominant_emotion']
+            
+            # Update last checked time
+            #last_checked = current_time
         
-        # Get the dominant emotion
-        dominant_emotion = result[0]['dominant_emotion']
-        
-        # Update last checked time
-        #last_checked = current_time
-    
-    except Exception as e:
-        print("Error:", e)
-        dominant_emotion = "Unknown"
+        except Exception as e:
+            print("Error:", e)
+            dominant_emotion = "Unknown"
 
     # Display Emotion on Screen
     cv2.putText(frame, f"Emotion: {dominant_emotion}", (50, 50), 
