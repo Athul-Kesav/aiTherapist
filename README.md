@@ -39,14 +39,14 @@ Future iterations will incorporate an avatar that uses the final synthesized spe
 
 ### Frontend
 
-A responsive web interface that ensures accessibility and usability across devices, including desktops and mobile devices.
+A responsive web interface that ensures accessibility and usability across devices, including desktops and mobile devices, built in [NEXT.js](https://nextjs.org/)
 
 ### Backend & AI Modules
 
 - Video Processing:
-Implements emotion detection using DeepFace with plans to evolve into a custom model trained on the AffectNet dataset.
+Implements emotion detection using [DeepFace](https://pypi.org/project/deepface) with plans to evolve into a custom model trained on the [AffectNet](https://paperswithcode.com/dataset/affectnet) dataset.
 - Audio Processing:
-Uses Librosa for audio feature extraction and AssemblyAI for robust speech-to-text conversion.
+Uses [Librosa](https://github.com/librosa) for audio feature extraction and [AssemblyAI](https://www.assemblyai.com/) for robust speech-to-text conversion.
 - LLM Integration:
 The next phase involves integrating an AI model to process the multimodal inputs and generate emotionally supportive responses.
 - Responsive Design Considerations:
