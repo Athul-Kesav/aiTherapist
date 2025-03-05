@@ -8,3 +8,6 @@
 
 #environment files
 .env
+
+# temp files
+*.wav
