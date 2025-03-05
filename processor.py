@@ -1,3 +1,5 @@
+# processor.py
+
 import librosa
 import numpy as np
 from flask import Flask, request, jsonify
@@ -7,6 +9,7 @@ import os
 import cv2
 import time
 from deepface import DeepFace
+import subprocess
 
 
 
@@ -29,6 +32,22 @@ from deepface import DeepFace
     return transcript """
     
 app = Flask(__name__)
+
+def convert_webm_to_mp4(input_path: str, output_path: str):
+    """
+    Convert a WebM file to MP4 using FFmpeg.
+    """
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i", input_path,
+        "-c:v", "libx264",  # Use H.264 codec for video
+        "-c:a", "aac",      # Use AAC codec for audio
+        "-strict", "experimental",
+        output_path
+    ]
+    # Run the command and raise an error if conversion fails.
+    subprocess.run(command, check=True)
 
 def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     
@@ -125,20 +144,30 @@ def analyze_audio():
 
     return jsonify(results)
 
-@app.route('/analyze-video', methods=['POST'])
 
+@app.route('/analyze-video', methods=['POST'])
 def analyze_video():
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
     
-    # Ensure the "temp" directory exists
+    # Ensure the "temp" directory exists.
     os.makedirs("temp", exist_ok=True)
-    filepath = "temp/temp_video.mp4"
-    file.save(filepath)
+    
+    # Save the uploaded file as WebM.
+    webm_path = "temp/temp_video.webm"
+    mp4_path = "temp/temp_video.mp4"
+    file.save(webm_path)
 
-    cap = cv2.VideoCapture(filepath)
+    try:
+        # Convert the WebM file to MP4.
+        convert_webm_to_mp4(webm_path, mp4_path)
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": "Video conversion failed", "details": str(e)}), 500
+
+    # Open the converted MP4 file with OpenCV.
+    cap = cv2.VideoCapture(mp4_path)
     if not cap.isOpened():
         return jsonify({"error": "Failed to open video file"}), 400
 
@@ -147,8 +176,8 @@ def analyze_video():
         cap.release()
         return jsonify({"error": "Video file has no frames"}), 400
 
-    # Randomly sample frames (ensure we sample only when frames are available)
-    frame_indices = np.random.choice(frame_count, size=min(10, frame_count), replace=False)
+    # Randomly sample frames.
+    frame_indices = np.random.choice(frame_count, size=min(20, frame_count), replace=False)
     emotions = []
 
     for idx in frame_indices:
@@ -158,9 +187,9 @@ def analyze_video():
             continue
         try:
             result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
-            # DeepFace.analyze might return a dict or list depending on the version.
-            # Adjust accordingly if needed.
-            emotions.append(result[0]['dominant_emotion'] if isinstance(result, list) else result['dominant_emotion'])
+            # Adjust based on whether result is a list or dict.
+            dominant_emotion = result[0]['dominant_emotion'] if isinstance(result, list) else result['dominant_emotion']
+            emotions.append(dominant_emotion)
         except Exception as e:
             print("Error analyzing frame:", e)
             continue
@@ -170,9 +199,9 @@ def analyze_video():
     if not emotions:
         return jsonify({"error": "Could not detect emotions"}), 500
 
-    # Determine the dominant mood by taking the most frequent emotion
     mood = max(set(emotions), key=emotions.count)
     return jsonify({"mood": mood})
+
 
 # Example usage
 if __name__ == "__main__":

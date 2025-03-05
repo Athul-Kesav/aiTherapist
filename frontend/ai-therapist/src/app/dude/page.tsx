@@ -1,6 +1,5 @@
 "use client";
 
-
 // components/VideoRecorder.tsx
 import React, { useRef, useState } from 'react';
 
@@ -9,6 +8,7 @@ const VideoRecorder: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [recording, setRecording] = useState<boolean>(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [responseMessage, setResponseMessage] = useState<string | null>(null);
 
   const startRecording = async () => {
     try {
@@ -48,29 +48,35 @@ const VideoRecorder: React.FC = () => {
       });
 
       if (response.ok) {
-        alert('Video uploaded successfully!');
+        const data = await response.json();
+        setResponseMessage(data.message || 'Video uploaded successfully!');
       } else {
-        alert('Failed to upload video.');
+        setResponseMessage('Failed to upload video.');
       }
     } catch (error) {
       console.error('Error uploading video:', error);
-      alert('Error uploading video.');
+      setResponseMessage('Error uploading video.');
     }
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <video ref={videoRef} autoPlay muted style={{ width: '100%', maxWidth: '400px' }} />
+      <video ref={videoRef} autoPlay muted style={{ width: '100%', maxWidth: '400px' }} className='' />
       <div>
         {!recording ? (
-          <button onClick={startRecording}>Start Recording</button>
+          <button onClick={startRecording} className='p-4 bg-green-300 active:bg-green-500 hover:bg-green-400 m-5 text-black cursor-pointer rounded-lg'>Start Recording</button>
         ) : (
-          <button onClick={stopRecording}>Stop Recording</button>
+          <button onClick={stopRecording} className='p-4 bg-green-300 active:bg-green-500 hover:bg-green-400 m-5 text-black cursor-pointer rounded-lg'>Stop Recording</button>
         )}
       </div>
       {videoBlob && (
         <div>
-          <button onClick={uploadVideo}>Upload Video</button>
+          <button onClick={uploadVideo} className='p-4 bg-blue-300 active:bg-blue-500 hover:bg-blue-400 m-5 text-black cursor-pointer rounded-lg'>Upload Video</button>
+        </div>
+      )}
+      {responseMessage && (
+        <div className='p-4 bg-gray-200 m-5 text-black rounded-lg'>
+          {responseMessage}
         </div>
       )}
     </div>

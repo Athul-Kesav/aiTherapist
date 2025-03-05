@@ -3,6 +3,8 @@
 # models
 /vosk-model-en-us-0.22
 
+# temp folder
+/temp
 
 #environment files
 .env
