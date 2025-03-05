@@ -1,24 +1,15 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+
+@font-face {
+  font-family: "Aloha Magazine - Demo Version";
+  src: url(/fonts/AlohaMagazine-DemoVersion-Bold.otf) format(otf);
 }
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: #010101;
   font-family: Arial, Helvetica, sans-serif;
 }
