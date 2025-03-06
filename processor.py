@@ -136,7 +136,7 @@ def analyze_audio():
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
-    filepath = "/temp/temp_audio.wav"
+    filepath = "./temp/temp_audio.wav"
     file.save(filepath)
 
     # Process the uploaded audio file
