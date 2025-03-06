@@ -16,11 +16,14 @@ type VideoResponse = {
   mood: string;
 };
 
-type ResponseMessage = {
-  message: string;
-  audioResponse: AudioResponse;
-  videoResponse: VideoResponse;
-} | string | null;
+type ResponseMessage =
+  | {
+      message: string;
+      audioResponse: AudioResponse;
+      videoResponse: VideoResponse;
+    }
+  | string
+  | null;
 
 const VideoRecorder: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -28,6 +31,7 @@ const VideoRecorder: React.FC = () => {
   const [recording, setRecording] = useState<boolean>(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [responseMessage, setResponseMessage] = useState<ResponseMessage>(null);
+  const [showUploadVideoBtn, setShowUploadVideoBtn] = useState(true);
 
   const startRecording = async () => {
     try {
@@ -58,6 +62,7 @@ const VideoRecorder: React.FC = () => {
   };
 
   const uploadVideo = async () => {
+    setShowUploadVideoBtn(false);
     if (!videoBlob) return;
 
     const formData = new FormData();
@@ -74,7 +79,7 @@ const VideoRecorder: React.FC = () => {
         setResponseMessage(
           data.videoResponse.mood || "Video uploaded successfully!"
         );
-        console.log(responseMessage)
+        console.log(responseMessage);
       } else {
         setResponseMessage("Failed to upload video.");
       }
@@ -85,11 +90,17 @@ const VideoRecorder: React.FC = () => {
   };
 
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
-      {/* <video ref={videoRef} autoPlay muted style={{ width: '100%', maxWidth: '400px' }} className='' /> */}
+    <div className="relative flex flex-col items-center">
       <div className="h-screen w-screen flex justify-center items-center overflow-hidden relative">
+        {showUploadVideoBtn && (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            style={{ width: "100%", maxWidth: "400px" }}
+            className="z-10 absolute  object-cover"
+          />
+        )}
         <Image
           src="/background.jpg"
           alt="background"
@@ -100,7 +111,7 @@ const VideoRecorder: React.FC = () => {
         {!recording ? (
           <button
             onClick={startRecording}
-            className="absolute bottom-20 origin-center hover:scale-110 transition-all active:scale-95 p-4 bg-[#D7C5F9] active:bg-[#c3a5fc] hover:bg-[#b58efd] m-5 text-black cursor-pointer rounded-full"
+            className="absolute bottom-20 origin-center hover:scale-110 transition-all active:scale-95 p-4 bg-[#D7C5F9] active:bg-[#c3a5fc] hover:bg-[#b58efd] m-5 text-black cursor-pointer rounded-full z-20"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +135,7 @@ const VideoRecorder: React.FC = () => {
             onClick={() => {
               stopRecording();
             }}
-            className="absolute bottom-20 origin-center hover:scale-110 transition-all active:scale-95 p-4 bg-[#D7C5F9] active:bg-[#c3a5fc] hover:bg-[#b58efd] m-5 text-black cursor-pointer rounded-full"
+            className="absolute bottom-20 origin-center hover:scale-110 transition-all active:scale-95 p-4 bg-[#D7C5F9] active:bg-[#c3a5fc] hover:bg-[#b58efd] m-5 text-black cursor-pointer rounded-full z-20"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -144,7 +155,7 @@ const VideoRecorder: React.FC = () => {
           </button>
         )}
       </div>
-      {videoBlob && (
+      {videoBlob && showUploadVideoBtn && (
         <div className="flex flex-col items-center">
           <button
             onClick={uploadVideo}
@@ -154,27 +165,26 @@ const VideoRecorder: React.FC = () => {
           </button>
         </div>
       )}
-      
-      {responseMessage && typeof responseMessage !== 'string' && (
+
+      {responseMessage && typeof responseMessage !== "string" && (
         <div className="absolute bottom-64 p-4 bg-gray-200 m-5 text-black rounded-lg ">
           {responseMessage.audioResponse ? (
             <div>
               <h2>Audio Analysis</h2>
               <p>
-                Average Intensity: {responseMessage.audioResponse.average_intensity}
+                Average Intensity:{" "}
+                {responseMessage.audioResponse.average_intensity}
               </p>
               <p>
                 Average Pitch: {responseMessage.audioResponse.average_pitch}
               </p>
-              <p>
-                Max Pitch: {responseMessage.audioResponse.max_pitch}
-              </p>
-              <p>
-                Min Pitch: {responseMessage.audioResponse.min_pitch}
-              </p>
+              <p>Max Pitch: {responseMessage.audioResponse.max_pitch}</p>
+              <p>Min Pitch: {responseMessage.audioResponse.min_pitch}</p>
               <p>Transcript: {responseMessage.audioResponse.transcript}</p>
-              </div>
-          ) : ""}
+            </div>
+          ) : (
+            ""
+          )}
           <h2>Video Analysis</h2>
           <p>Mood: {responseMessage.videoResponse.mood}</p>
         </div>
