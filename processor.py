@@ -11,25 +11,6 @@ from deepface import DeepFace
 import subprocess
 from transformers import pipeline
 
-
-
-# import speech_recognition as sr
-
-""" def get_transcript(audio_file):
-    
-    # Convert an audio file to text using Google's speech recognition.
-    # Returns the transcript, or "unknown" if the audio is not clear.
-    
-    recognizer = sr.Recognizer()
-    try:
-        with sr.AudioFile(audio_file) as source:
-            audio_data = recognizer.record(source)
-        # Using Google Web Speech API for recognition.
-        # You can change this to another recognizer if desired.
-        transcript = recognizer.recognize_google(audio_data)
-    except (sr.UnknownValueError, sr.RequestError):
-        transcript = "unknown"
-    return transcript """
     
 app = Flask(__name__)
 
@@ -82,6 +63,7 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     
     # Remove NaN values from pitch estimates (unvoiced frames)
     valid_pitches = pitches[~np.isnan(pitches)]
+    
     if valid_pitches.size == 0:
         average_pitch = 0
         min_pitch = 0

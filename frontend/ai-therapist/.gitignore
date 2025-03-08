@@ -23,6 +23,9 @@
 # temp folder
 /tmp
 
+# context info
+/src/app/api/get-video/context.json
+
 # misc
 .DS_Store
 *.pem
