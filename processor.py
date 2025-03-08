@@ -164,7 +164,10 @@ def analyze_video():
 
     try:
         # Convert the WebM file to MP4.
-        convert_webm_to_mp4(webm_path, mp4_path)
+        if file.filename.endswith('.mp4'):
+            mp4_path = webm_path
+        else:
+            convert_webm_to_mp4(webm_path, mp4_path)
     except subprocess.CalledProcessError as e:
         return jsonify({"error": "Video conversion failed", "details": str(e)}), 500
 
