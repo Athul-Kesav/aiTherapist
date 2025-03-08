@@ -3,17 +3,51 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+
 
 // 1. Point to context.txt in the same folder
-const contextFilePath = path.join(process.cwd(),"src", "app", "api", "get-video", "context.txt");
+const contextFilePath = path.join(process.cwd(), "src", "app", "api", "get-video", "context.json");
+
 
 export async function POST(request: Request): Promise<NextResponse> {
 
-  
+  const audioEndpoint = process.env.AUDIO_ENDPOINT;
+  const videoEndpoint = process.env.VIDEO_ENDPOINT;
+  const llmEndpoint = process.env.LLM_ENDPOINT;
+  const MAX_CONTEXT_TOKENS = process.env.MAX_CONTEXT_TOKENS ? parseInt(process.env.MAX_CONTEXT_TOKENS) : 2048;
+
+  function saveContext(context: number[]): void {
+    // Ensure context does not exceed MAX_CONTEXT_TOKENS
+    if (context.length > MAX_CONTEXT_TOKENS) {
+      context = context.slice(-MAX_CONTEXT_TOKENS); // Keep only recent tokens
+    }
+    fs.writeFileSync(contextFilePath, JSON.stringify(context, null, 2), "utf-8");
+  }
+
+  function loadContext(): number[] {
+    if (fs.existsSync(contextFilePath)) {
+      const fileContent = fs.readFileSync(contextFilePath, "utf-8").trim();
+      return fileContent ? JSON.parse(fileContent) as number[] : [];
+    }
+    return [];
+  }
+
+ 
+
+  //console.log("Endpoints: ", audioEndpoint, videoEndpoint, llmEndpoint)
+
+  let context: number[] = loadContext();
+
   console.log("Request received")
+  // Check if the file exists and is not empty
+  
+
   try {
 
-    let context = fs.readFileSync(contextFilePath, "utf-8");
     // Parse the incoming form data
     const formData = await request.formData();
     const fileField = formData.get("file");
@@ -34,7 +68,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Prepare a FormData for the /analyze-audio endpoint.
     const audioFormData = new FormData();
     audioFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const audioResponse = await fetch("http://localhost:5000/analyze-audio", {
+    const audioResponse = await fetch(`${audioEndpoint}`, {
       method: "POST",
       body: audioFormData,
     });
@@ -43,7 +77,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Prepare a FormData for the /analyze-video endpoint.
     const videoFormData = new FormData();
     videoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const videoResponse = await fetch("http://localhost:5000/analyze-video", {
+    const videoResponse = await fetch(`${videoEndpoint}`, {
       method: "POST",
       body: videoFormData,
     });
@@ -56,35 +90,55 @@ export async function POST(request: Request): Promise<NextResponse> {
       videoResponse: videoData,
     }
 
-    console.log(processorResponse)
+    const promptText = `
+      The user is in a ${processorResponse.videoResponse?.mood || "neutral"} mood.
+      The voice analysis is:
+      - Max Pitch: ${processorResponse.audioResponse?.max_pitch || "unknown"}
+      - Min Pitch: ${processorResponse.audioResponse?.min_pitch || "unknown"}
+      - Average Intensity: ${processorResponse.audioResponse?.average_intensity || "unknown"}
+      - Sentiment Analysis: 
+          - Label: ${processorResponse.audioResponse?.sentiment?.label || "unknown"}
+          - Score: ${processorResponse.audioResponse?.sentiment?.score || 0}
+      - Transcript: "${processorResponse.audioResponse?.transcript || "No transcript available"}"
 
-    const llmRequest = {
-      model:"mistral",
-      prompt:`The user is in a ${processorResponse.videoResponse.mood} mood.
-      The voice analysis is max_pitch : ${processorResponse.audioResponse.max_pitch}, min_pitch : ${processorResponse.audioResponse.min_pitch}, average_intensity : ${processorResponse.audioResponse.average_intensity}, transcript : ${processorResponse.audioResponse.transcript}, sentiment analysis : label - ${processorResponse.audioResponse.sentiment.label}, score - ${processorResponse.audioResponse.sentiment.score}.
       Generate a human-like response to the user's mood.
-      do not use any offensive language.
-      make it sound like a converstaion.`,
-      max_tokens: 100,
-      temperature: 0.8,
-      top_p: 1,
-      stream: false,
-      context: context
-    }
+      Do not use any offensive language.
+      Make it sound like a conversation.
+      If the question is unclear or vague, tell the user to provide more context.
+      `;
 
+    
+
+    
 
     console.log("Sending data to LLM")
-    console.log(llmRequest)
+    
     // Send the processed data to the LLM endpoint
-    const llmResponse = await axios.post("http://localhost:11434/api/generate", llmRequest);
+
+    const llmResponse = await axios.post(`${llmEndpoint}`, {
+        model: "mistral",
+        prompt: `${promptText}`,
+        max_tokens: 200,
+        temperature: 0.8,
+        top_p: 0.5,
+        stream: false,
+        context: context
+      }
+    )
 
     context = llmResponse.data.context;
-    console.log(llmResponse.data.response);
-    console.log(llmResponse.data.context);
+    //console.log(llmResponse.data.response);
+    //console.log(llmResponse.data.context);
 
+    saveContext(context);
+    //console.log("Saved context:", context);
+
+    console.log("Response sent to client")
     return NextResponse.json({
-      "response": llmResponse.data.response 
+      "response": llmResponse.data.response
     });
+
+    
 
   } catch (error) {
     console.error("Error processing video:", error);

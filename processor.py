@@ -7,7 +7,6 @@ import assemblyai as aai
 from dotenv import load_dotenv
 import os
 import cv2
-import time
 from deepface import DeepFace
 import subprocess
 from transformers import pipeline
