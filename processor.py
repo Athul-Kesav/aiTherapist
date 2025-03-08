@@ -10,6 +10,7 @@ import cv2
 import time
 from deepface import DeepFace
 import subprocess
+from transformers import pipeline
 
 
 
@@ -61,18 +62,16 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
       
     Returns:
       dict: A dictionary containing:
-            - 'audio': The raw audio signal (1D numpy array).
-            - 'time_wave': Time axis for the waveform (seconds).
-            - 'pitch': The estimated pitch (Hz) per frame (numpy array).
-            - 'time_pitch': Time axis for the pitch values (seconds).
-            - 'intensity': RMS intensity values per frame (numpy array).
-            - 'time_intensity': Time axis for the RMS values (seconds).
             - 'average_pitch': The average pitch (Hz) computed over valid frames.
             - 'min_pitch': The minimum pitch (Hz) among valid frames.
             - 'max_pitch': The robust maximum pitch (95th percentile, Hz) among valid frames.
             - 'average_intensity': The average RMS intensity.
             - 'transcript': The transcript of the audio file.
+            - 'sentiment': The sentiment of the transcript.
     """
+    
+    
+    classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english") 
     
     
     # Load the audio file using librosa
@@ -122,7 +121,10 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     "min_pitch": round(float(min_pitch), 2),
     "max_pitch": round(float(max_pitch), 2),
     "average_intensity": round(float(average_intensity), 2),
-    "transcript": transcript.text
+    "sentiment": {
+        "label":classifier(transcript.text)[0]['label'],
+        "score":classifier(transcript.text)[0]['score']},
+    "transcript": transcript.text,
 }
     return results
 
