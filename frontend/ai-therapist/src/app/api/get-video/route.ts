@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
+// import libraries
 import axios from "axios";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 
+// load .env variables
 dotenv.config();
 
 
@@ -36,15 +38,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     return [];
   }
 
- 
-
-  //console.log("Endpoints: ", audioEndpoint, videoEndpoint, llmEndpoint)
 
   let context: number[] = loadContext();
 
   console.log("Request received")
-  // Check if the file exists and is not empty
-  
 
   try {
 
@@ -65,24 +62,28 @@ export async function POST(request: Request): Promise<NextResponse> {
     const videoBuffer = Buffer.from(arrayBuffer);
 
     console.log("Sending data to other endpoints")
+
     // Prepare a FormData for the /analyze-audio endpoint.
+
     const audioFormData = new FormData();
     audioFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
     const audioResponse = await fetch(`${audioEndpoint}`, {
       method: "POST",
       body: audioFormData,
     });
+
     const audioData = await audioResponse.json();
 
     // Prepare a FormData for the /analyze-video endpoint.
+
     const videoFormData = new FormData();
     videoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
     const videoResponse = await fetch(`${videoEndpoint}`, {
       method: "POST",
       body: videoFormData,
     });
-    const videoData = await videoResponse.json();
 
+    const videoData = await videoResponse.json();
 
     const processorResponse = {
       message: "Video processed and sent successfully",
@@ -107,10 +108,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       If the question is unclear or vague, tell the user to provide more context.
       `;
 
-    
-
-    
-
     console.log("Sending data to LLM")
     
     // Send the processed data to the LLM endpoint
@@ -127,18 +124,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     )
 
     context = llmResponse.data.context;
-    //console.log(llmResponse.data.response);
-    //console.log(llmResponse.data.context);
 
     saveContext(context);
-    //console.log("Saved context:", context);
 
     console.log("Response sent to client")
     return NextResponse.json({
       "response": llmResponse.data.response
     });
-
-    
 
   } catch (error) {
     console.error("Error processing video:", error);
