@@ -24,7 +24,7 @@
 /tmp
 
 # context info
-/src/app/api/get-video/context.json
+*context.json
 
 # misc
 .DS_Store
