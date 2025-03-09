@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@font-face {
+  font-family: 'Aloha Magazine - Demo Version';
+  src: url(/fonts/AlohaMagazine-Demo.otf) format('opentype');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url(/fonts/Montserrat.ttf) format('truetype');
+}
+
+.font-alohaMagazine {
+  font-family: 'Aloha Magazine - Demo Version';
+}
+
+.font-montserrat {
+  font-family: 'Montserrat';
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.myButton {
+  display: inline-block;
+  text-align: center;
+  background: var(--color);
+  color: var(--bg);
+  font-weight: bold;
+  padding: 1.18em 1.32em 1.03em;
+  line-height: 1;
+  border-radius: 1em;
+  position: relative;
+  min-width: 8.23em;
+  text-decoration: none;
+  font-family: var(--font);
+  font-size: 1.25rem;
+}
+
+.myButton:before,
+.myButton:after {
+  width: 4.4em;
+  height: 2.95em;
+  position: absolute;
+  content: "";
+  display: inline-block;
+  background: var(--color);
+  border-radius: 50%;
+  transition: transform 1s ease;
+  transform: scale(0);
+  z-index: -1;
+}
+
+.myButton:before {
+  top: -25%;
+  left: 20%;
+}
+
+.myButton:after {
+  bottom: -25%;
+  right: 20%;
+}
+
+.myButton:hover:before,
+.myButton:hover:after {
+  transform: none;
+}
