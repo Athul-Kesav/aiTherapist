@@ -50,7 +50,7 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
             - 'sentiment': The sentiment of the transcript.
     """
     
-    
+    # sentiment analysis model
     classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english") 
     
     

@@ -11,3 +11,6 @@
 
 # temp files
 *.wav
+
+# context file
+/frontend/ai-therapist/src/app/api/get-video/context.json
