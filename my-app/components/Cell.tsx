@@ -45,7 +45,7 @@ const Cell: React.FC<CellProps> = ({ mouseX, mouseY }) => {
     // center y coordinate
     const y = rect.top + CELL_SIZE / 2;
     setPosition([x, y]);
-  }, [ref.current]);
+  }, []);
 
   return (
     <Container ref={ref}>

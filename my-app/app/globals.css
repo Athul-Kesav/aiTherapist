@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #03045E;
+  --foreground: #ffffff;
 }
 
 @font-face {
@@ -25,7 +25,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #010125;
     --foreground: #ededed;
   }
 }
@@ -36,47 +36,255 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.myButton {
-  display: inline-block;
-  text-align: center;
-  background: var(--color);
-  color: var(--bg);
-  font-weight: bold;
-  padding: 1.18em 1.32em 1.03em;
-  line-height: 1;
-  border-radius: 1em;
-  position: relative;
-  min-width: 8.23em;
-  text-decoration: none;
-  font-family: var(--font);
-  font-size: 1.25rem;
-}
-
-.myButton:before,
-.myButton:after {
-  width: 4.4em;
-  height: 2.95em;
+.blob1, .blob2, .blob3, .blob4 {
   position: absolute;
-  content: "";
-  display: inline-block;
-  background: var(--color);
   border-radius: 50%;
-  transition: transform 1s ease;
-  transform: scale(0);
-  z-index: -1;
+  filter: blur(50px);
+  mix-blend-mode:hue;
 }
 
-.myButton:before {
-  top: -25%;
+.blob1 {
   left: 20%;
+  top: 30%;
+  width: 500px;
+  height: 500px;
+  background: rgba(0, 0, 255, 0.08);
+  animation: blob1 25s ease-in-out infinite, shape1 10s ease-in-out infinite, color1 20s ease-in-out infinite;
 }
 
-.myButton:after {
-  bottom: -25%;
-  right: 20%;
+@keyframes blob1 {
+  0% {
+    transform: scale(1.8) translate(0, 0);
+  }
+  10% {
+    transform: scale(2) translate(20px, 20px);
+  }
+  15% {
+    transform: scale(1.9) translate(40px, 40px);
+  }
+  25% {
+    transform: scale(1.7) translate(-20px, -20px);
+  }
+  50% {
+    transform: scale(2) translate(-40px, -40px);
+  }
+  75% {
+    transform: scale(1.85) translate(-20px, -20px);
+  }
+  100% {
+    transform: scale(1.8) translate(0, 0);
+  }
 }
 
-.myButton:hover:before,
-.myButton:hover:after {
-  transform: none;
+@keyframes shape1 {
+  0%, 100% {
+    border-radius: 50% 50% 50% 50%;
+  }
+  25% {
+    border-radius: 60% 40% 70% 30%;
+  }
+  50% {
+    border-radius: 40% 60% 30% 70%;
+  }
+  75% {
+    border-radius: 70% 30% 60% 40%;
+  }
+}
+
+@keyframes color1 {
+  0%, 100% {
+    background: rgba(0, 0, 255, 0.2);
+  }
+  25% {
+    background: rgba(0, 191, 255, 0.08);
+  }
+  50% {
+    background: rgba(30, 144, 255, 0.08);
+  }
+  75% {
+    background: rgba(70, 130, 180, 0.08);
+  }
+}
+
+.blob2 {
+  left: 60%;
+  top: 20%;
+  width: 400px;
+  height: 400px;
+  background: rgba(0, 0, 139, 0.08);
+  animation: blob2 30s ease-in-out infinite, shape2 12s ease-in-out infinite, color2 25s ease-in-out infinite;
+}
+
+@keyframes blob2 {
+  0% {
+    transform: scale(1.6) translate(0, 0);
+  }
+  20% {
+    transform: scale(1.7) translate(30px, -30px);
+  }
+  40% {
+    transform: scale(1.5) translate(-20px, 20px);
+  }
+  60% {
+    transform: scale(1.8) translate(40px, -40px);
+  }
+  80% {
+    transform: scale(1.65) translate(-30px, 30px);
+  }
+  100% {
+    transform: scale(1.6) translate(0, 0);
+  }
+}
+
+@keyframes shape2 {
+  0%, 100% {
+    border-radius: 50% 50% 50% 50%;
+  }
+  25% {
+    border-radius: 65% 35% 55% 45%;
+  }
+  50% {
+    border-radius: 35% 65% 45% 55%;
+  }
+  75% {
+    border-radius: 55% 45% 65% 35%;
+  }
+}
+
+@keyframes color2 {
+  0%, 100% {
+    background: rgba(0, 0, 139, 0.08);
+  }
+  25% {
+    background: rgba(0, 0, 205, 0.08);
+  }
+  50% {
+    background: rgba(25, 25, 112, 0.08);
+  }
+  75% {
+    background: rgba(65, 105, 225, 0.08);
+  }
+}
+
+.blob3 {
+  left: 40%;
+  top: 60%;
+  width: 450px;
+  height: 450px;
+  background: rgba(0, 0, 205, 0.08);
+  animation: blob3 35s ease-in-out infinite, shape3 14s ease-in-out infinite, color3 30s ease-in-out infinite;
+}
+
+@keyframes blob3 {
+  0% {
+    transform: scale(1.7) translate(0, 0);
+  }
+  20% {
+    transform: scale(1.8) translate(25px, -25px);
+  }
+  40% {
+    transform: scale(1.6) translate(-20px, 20px);
+  }
+  60% {
+    transform: scale(1.9) translate(30px, -30px);
+  }
+  80% {
+    transform: scale(1.75) translate(-25px, 25px);
+  }
+  100% {
+    transform: scale(1.7) translate(0, 0);
+  }
+}
+
+@keyframes shape3 {
+  0%, 100% {
+    border-radius: 50% 50% 50% 50%;
+  }
+  25% {
+    border-radius: 70% 30% 60% 40%;
+  }
+  50% {
+    border-radius: 30% 70% 40% 60%;
+  }
+  75% {
+    border-radius: 60% 40% 70% 30%;
+  }
+}
+
+@keyframes color3 {
+  0%, 100% {
+    background: rgba(0, 0, 205, 0.08);
+  }
+  25% {
+    background: rgba(0, 0, 255, 0.08);
+  }
+  50% {
+    background: rgba(0, 100, 255, 0.08);
+  }
+  75% {
+    background: rgba(0, 191, 255, 0.08);
+  }
+}
+
+.blob4 {
+  left: 50%;
+  top: 50%;
+  width: 450px;
+  height: 450px;
+  background: rgba(104, 150, 197, 0.623);
+  animation: blob4 40s ease-in-out infinite, shape4 16s ease-in-out infinite, color4 35s ease-in-out infinite;
+}
+
+@keyframes blob4 {
+  0% {
+    transform: scale(1.8) translate(0, 0);
+  }
+  15% {
+    transform: scale(2) translate(30px, -30px);
+  }
+  30% {
+    transform: scale(1.7) translate(-20px, 20px);
+  }
+  45% {
+    transform: scale(2.1) translate(40px, -40px);
+  }
+  60% {
+    transform: scale(1.85) translate(-30px, 30px);
+  }
+  75% {
+    transform: scale(2) translate(35px, -35px);
+  }
+  100% {
+    transform: scale(1.8) translate(0, 0);
+  }
+}
+
+@keyframes shape4 {
+  0%, 100% {
+    border-radius: 50% 50% 50% 50%;
+  }
+  25% {
+    border-radius: 75% 25% 65% 35%;
+  }
+  50% {
+    border-radius: 25% 75% 35% 65%;
+  }
+  75% {
+    border-radius: 65% 35% 75% 25%;
+  }
+}
+
+@keyframes color4 {
+  0%, 100% {
+    background: rgba(104, 150, 197, 0.623);
+  }
+  25% {
+    background: rgba(104, 150, 197, 0.623);
+  }
+  50% {
+    background: rgba(0, 0, 139, 0.08);
+  }
+  75% {
+    background: rgba(0, 0, 255, 0.08);
+  }
 }

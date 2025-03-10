@@ -1,31 +1,32 @@
 "use client";
 
-import Grid from "@/components/Grid";
+import ShinyButton from "@/components/ShinyButton";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
 
-  function handleCallToAction() {
-    router.push("/dude");
-  }
+  
   return (
     <>
-      <div className="h-screen w-screen flex flex-col justify-center items-center">
+      <div className="h-screen w-screen flex flex-col justify-center items-center -z-40 ">
         <div className="h-screen w-screen absolute -z-10 overflow-hidden">
-          <Grid />
+          <div className="blob1 z-10"></div>
+          <div className="blob2 z-10"></div>
+          <div className="blob3 z-10"></div>
+          <div className="blob4 z-10"></div>
         </div>
-        <h1 className="font-alohaMagazine pointer-events-none z-40 text-5xl sm:text-7xl italic absolute top-1/2 left-1/2 origin-center transform -translate-x-1/2 -translate-y-1/2  ">
+        <h1 className="text-white font-alohaMagazine  pointer-events-none z-40 text-5xl sm:text-7xl italic absolute top-1/2 left-1/2 origin-center transform -translate-x-1/2 -translate-y-1/2  ">
           
           EmpathAIse
-          <p className="text-sm sm:text-lg font-montserrat text-center z-10 absolute left-1/2 transform -translate-x-1/2 font-sans not-italic w-full">
+          <p className="text-lg sm:text-lg font-montserrat text-center z-10 absolute left-1/2 transform -translate-x-1/2 font-sans not-italic w-full">
             An AI-powered friend
             <br />
             to help you understand yourself better.
           </p>
         </h1>
         <div className="absolute bottom-20">
-          <div
+          {/* <div
             className="relative inline-flex items-center justify-center gap-4 group cursor-pointer "
             onClick={handleCallToAction}
           >
@@ -53,7 +54,10 @@ export default function Home() {
                 ></path>
               </svg>
             </a>
-          </div>
+          </div> */}
+          <ShinyButton btnText="Get Started" cta={() => {
+            router.push("/dude")
+          }}/>
         </div>
       </div>
     </>
