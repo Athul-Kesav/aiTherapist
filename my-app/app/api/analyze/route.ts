@@ -12,7 +12,7 @@ dotenv.config();
 
 
 // 1. Point to context.txt in the same folder
-const contextFilePath = path.join(process.cwd(), "src", "app", "api", "get-video", "context.json");
+const contextFilePath = path.join(process.cwd(), "app", "api", "analyze", "context.json");
 
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -91,6 +91,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       videoResponse: videoData,
     }
 
+    
     const promptText = `
       The user is in a ${processorResponse.videoResponse?.mood || "neutral"} mood.
       The voice analysis is:
@@ -127,6 +128,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     context = llmResponse.data.context;
 
     saveContext(context);
+
+    console.log("context saved")
 
     console.log("Response sent to client")
     return NextResponse.json({

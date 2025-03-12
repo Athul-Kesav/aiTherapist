@@ -13,4 +13,4 @@
 *.wav
 
 # context file
-/frontend/ai-therapist/src/app/api/get-video/context.json
+/frontend/ai-therapist/app/api/get-video/context.json

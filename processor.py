@@ -82,6 +82,7 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     
     # Get the transcript using speech recognition
     # transcript = get_transcript(audio_file)
+    
     load_dotenv()
     API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 
@@ -104,7 +105,8 @@ def process_audio_file(audio_file, sr_target=22050, hop_length=512):
     "average_intensity": round(float(average_intensity), 2),
     "sentiment": {
         "label":classifier(transcript.text)[0]['label'],
-        "score":classifier(transcript.text)[0]['score']},
+        "score":classifier(transcript.text)[0]['score']
+    },
     "transcript": transcript.text,
 }
     return results
@@ -139,8 +141,8 @@ def analyze_video():
     os.makedirs("temp", exist_ok=True)
     
     # Save the uploaded file as WebM.
-    webm_path = "temp/temp_video.webm"
-    mp4_path = "temp/temp_video.mp4"
+    webm_path = "./temp/temp_video.webm"
+    mp4_path = "./temp/temp_video.mp4"
     file.save(webm_path)
 
     try:
