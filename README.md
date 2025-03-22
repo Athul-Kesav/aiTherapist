@@ -48,6 +48,7 @@ Implements emotion detection using [DeepFace](https://pypi.org/project/deepface)
 - Audio Processing:
 Uses [Librosa](https://github.com/librosa) for audio feature extraction and [AssemblyAI](https://www.assemblyai.com/) for robust speech-to-text conversion.
 - LLM Integration:
-The next phase involves integrating an AI model to process the multimodal inputs and generate emotionally supportive responses.
+~~The next phase involves integrating an AI model to process the multimodal inputs and generate emotionally supportive responses.~~
+Mistral-7B added as LLM for supportive text generation, to be replaced with a custom model.
 - Responsive Design Considerations:
 Special attention is given to mobile responsiveness, including dynamic viewport height adjustments to cater for mobile browser UI elements, ensuring a smooth, scroll-free user experience.
