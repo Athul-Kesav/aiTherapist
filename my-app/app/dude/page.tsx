@@ -42,7 +42,7 @@ export default function Dude() {
         setVideoStream(stream);
 
         const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-        let chunks: BlobPart[] = [];
+        const chunks: BlobPart[] = [];
 
         recorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
@@ -134,7 +134,7 @@ export default function Dude() {
         className={`font-alohaMagazine tracking-wider transition-all duration-500 flex items-center ${
           !chatStarted
             ? "text-5xl"
-            : "text-4xl p-4 row-span-1 shadow-xl shadow-black/50 border-b border-white/25"
+            : "text-4xl p-4 row-span-1 shadow-xl shadow-black/40 border-b border-white/25"
         }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -175,9 +175,9 @@ export default function Dude() {
       )}
 
       {chatStarted && (
-        <div className="row-span-5 flex flex-col items-center justify-center">
+        <div className="row-span-5 flex flex-col items-center">
           {/* This middle section can be used for your chat window */}
-          <div className="overflow-y-auto h-full w-full md:max-w-2/3 flex flex-col items-center justify-center font-montserrat text-xl sm:text-2xl p-5 text-white font-light">
+          <div className="overflow-y-auto h-full w-full md:max-w-2/3 flex flex-col items-center justify-start font-montserrat text-lg sm:text-2xl p-5 text-white font-light">
             {aiResponse ? (
               <motion.h1
                 initial={{ opacity: 0 }}
@@ -202,7 +202,7 @@ export default function Dude() {
                   duration: 1.5,
                 }}
               >
-                What's on your mind?
+                What&apos;s on your mind?
               </motion.h1>
             )}
           </div>
@@ -211,7 +211,7 @@ export default function Dude() {
 
       {/* Bottom bar */}
       <div
-        className={`z-20 absolute bottom-5 sm:bottom-10 items-center left-1/2 transform -translate-x-1/2 w-fit max-w-md sm:max-w-1/3 bg-black/20 border border-white/25 backdrop-blur-xl px-4 py-2 rounded-lg flex justify-center gap-2 shadow-2xl shadow-black/70 ${
+        className={`z-20 absolute -bottom-10 sm:bottom-10 items-center left-1/2 transform -translate-x-1/2 w-full p-3 sm:max-w-3/5 md:max-w-3/5 bg-black/20 border border-white/25 backdrop-blur-xl px-4 py-2 rounded-lg flex justify-center gap-2 shadow-2xl shadow-black/70 ${
           chatStarted ? "row-span-1" : ""
         }`}
       >
