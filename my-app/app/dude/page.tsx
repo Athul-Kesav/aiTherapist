@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 export default function Dude() {
   // State for toggling button icons / recording status
@@ -18,6 +19,7 @@ export default function Dude() {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [voiceBtnClicked, setVoiceBtnClicked] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
+  const [textPrompt, setTextPrompt] = useState("")
 
   const [aiResponse, setAiResponse] = useState<string | null>(null);
 
@@ -90,6 +92,7 @@ export default function Dude() {
     console.log("Voice Call");
     setVoiceBtnClicked(!voiceBtnClicked);
     setChatStarted(true);
+
   }
 
   // Send the recorded video blob to a dummy backend.
@@ -98,27 +101,27 @@ export default function Dude() {
     // Reset recorded video on clicking send.
     setRecordedVideo(null);
     setVideoBlob(null);
+    setChatStarted(true);
 
     setAiResponse("Analyzing...");
+    const formData = new FormData();
     if (videoBlob) {
-      const formData = new FormData();
       formData.append("file", videoBlob, "recorded_video.webm");
-
-      try {
-        const response = await fetch("http://localhost:3000/api/analyze", {
-          method: "POST",
-          body: formData,
-        });
-        console.log("Video sent to backend", response);
-        const data = await response.json();
-        setAiResponse(data.response);
-      } catch (error) {
-        console.error("Error sending video:", error);
-      }
-
-      
+    } else if(textPrompt){
+      formData.append("textPrompt", textPrompt);
     } else {
-      console.log("No video to send");
+      console.error("No video or text prompt to send");
+      return;
+    }
+
+    try {
+      const response = await axios.post("http://localhost:3000/api/analyze", formData);
+      console.log("Video/Text sent to backend", response);
+      const data = response.data;
+      setAiResponse(data.response);
+      console.log("Response from backend:", data.response);
+    } catch (error) {
+      console.error("Error sending video/text:", error);
     }
   }
 
@@ -219,6 +222,9 @@ export default function Dude() {
           type="text"
           className="w-full bg-transparent text-white/75 text-2xl sm:text-lg outline-none font-montserrat placeholder:font-montserrat"
           placeholder="confide in"
+          onChange={(e)=>{
+            setTextPrompt(e.target.value)
+          }}
         />
 
         {/* Voice Button */}

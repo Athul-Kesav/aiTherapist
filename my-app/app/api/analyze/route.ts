@@ -17,6 +17,8 @@ const contextFilePath = path.join(process.cwd(), "app", "api", "analyze", "conte
 
 export async function POST(request: Request): Promise<NextResponse> {
 
+  console.log("Backend Reached")
+
   const audioEndpoint = process.env.AUDIO_ENDPOINT;
   const videoEndpoint = process.env.VIDEO_ENDPOINT;
   const llmEndpoint = process.env.LLM_ENDPOINT;
@@ -43,17 +45,47 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   console.log("Request received")
 
+  let llmResponse: { data: { response: string; context: number[] } } | null = null;
   try {
 
     // Parse the incoming form data
     const formData = await request.formData();
+    const textPrompt = formData.get("textPrompt") as string;
     const fileField = formData.get("file");
 
-    if (!fileField) {
-      return NextResponse.json(
-        { error: "No video file provided." },
-        { status: 400 }
-      );
+    if (!textPrompt) {
+      
+      if (!fileField) {
+        return NextResponse.json(
+          { error: "No video file provided." },
+          { status: 400 }
+        );
+      }
+    } else {
+      // If textPrompt is provided, append it to the context
+      llmResponse = await axios.post(`${llmEndpoint}`, {
+        model: "mistral",
+        prompt: `${textPrompt}`,
+        max_tokens: 50,
+        temperature: 0.8,
+        top_p: 0.5,
+        stream: false,
+        context: context,
+      })
+
+      if (llmResponse && llmResponse.data && llmResponse.data.context) {
+        context = llmResponse.data.context;
+      }
+  
+      saveContext(context);
+  
+      console.log("context saved")
+
+      console.log("Response from LLM for text prompt")
+      return NextResponse.json({
+        "response": llmResponse?.data?.response || "No response available"
+      });
+      
     }
 
     // 'fileField' is a File object (browser/Web API), so convert it to a buffer.
@@ -114,7 +146,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     
     // Send the processed data to the LLM endpoint
 
-    const llmResponse = await axios.post(`${llmEndpoint}`, {
+    llmResponse = await axios.post(`${llmEndpoint}`, {
         model: "mistral",
         prompt: `${promptText}`,
         max_tokens: 50,
@@ -125,7 +157,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     )
 
-    context = llmResponse.data.context;
+    if (llmResponse && llmResponse.data && llmResponse.data.context) {
+      context = llmResponse.data.context;
+    }
 
     saveContext(context);
 
@@ -133,7 +167,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     console.log("Response sent to client")
     return NextResponse.json({
-      "response": llmResponse.data.response
+      "response": llmResponse?.data?.response || "No response available"
     });
 
   } catch (error) {
