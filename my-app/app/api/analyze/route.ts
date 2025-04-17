@@ -149,7 +149,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     llmResponse = await axios.post(`${llmEndpoint}`, {
         model: "mistral",
         prompt: `${promptText}`,
-        max_tokens: 50,
+        max_tokens: 25,
         temperature: 0.8,
         top_p: 0.5,
         stream: false,
