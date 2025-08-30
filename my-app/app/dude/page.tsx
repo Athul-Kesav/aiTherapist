@@ -225,6 +225,11 @@ export default function Dude() {
           onChange={(e)=>{
             setTextPrompt(e.target.value)
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSend();
+            }
+          }}
         />
 
         {/* Voice Button */}

@@ -64,7 +64,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     } else {
       // If textPrompt is provided, append it to the context
       llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "mistral",
+        model: "llama3.2:3b",
         prompt: `${textPrompt}`,
         max_tokens: 50,
         temperature: 0.8,
@@ -81,15 +81,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   
       console.log("context saved")
 
-      console.log("Response from LLM for text prompt")
+      console.log("Response from LLM for text prompt sent")
       return NextResponse.json({
         "response": llmResponse?.data?.response || "No response available"
       });
       
     }
 
+    console.log("Accessing file field")
     // 'fileField' is a File object (browser/Web API), so convert it to a buffer.
     const videoFile = fileField as File;
+    console.log("File field accessed")
     const arrayBuffer = await videoFile.arrayBuffer();
     const videoBuffer = Buffer.from(arrayBuffer);
 
@@ -147,7 +149,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Send the processed data to the LLM endpoint
 
     llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "mistral",
+        model: "llama3.2:3b",
         prompt: `${promptText}`,
         max_tokens: 25,
         temperature: 0.8,
