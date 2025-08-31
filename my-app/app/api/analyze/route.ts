@@ -19,8 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   console.log("Backend Reached")
 
-  const audioEndpoint = process.env.AUDIO_ENDPOINT;
-  const videoEndpoint = process.env.VIDEO_ENDPOINT;
+  const audioVideoEndpoint = process.env.AUDIO_VIDEO_ENDPOINT;
   const llmEndpoint = process.env.LLM_ENDPOINT;
   const MAX_CONTEXT_TOKENS = process.env.MAX_CONTEXT_TOKENS ? parseInt(process.env.MAX_CONTEXT_TOKENS) : 2048;
 
@@ -99,43 +98,26 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // Prepare a FormData for the /analyze-audio endpoint.
 
-    const audioFormData = new FormData();
-    audioFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const audioResponse = await fetch(`${audioEndpoint}`, {
+    const audioVideoFormData = new FormData();
+    audioVideoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
+    const audioVideoResponse = await fetch(`${audioVideoEndpoint}`, {
       method: "POST",
-      body: audioFormData,
+      body: audioVideoFormData,
     });
 
-    const audioData = await audioResponse.json();
-
-    // Prepare a FormData for the /analyze-video endpoint.
-
-    const videoFormData = new FormData();
-    videoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const videoResponse = await fetch(`${videoEndpoint}`, {
-      method: "POST",
-      body: videoFormData,
-    });
-
-    const videoData = await videoResponse.json();
+    const audioVideoData = await audioVideoResponse.json();
 
     const processorResponse = {
       message: "Video processed and sent successfully",
-      audioResponse: audioData,
-      videoResponse: videoData,
+      audioVideoResponse: audioVideoData,
     }
 
     
     const promptText = `
-      The user is in a ${processorResponse.videoResponse?.mood || "neutral"} mood.
-      The voice analysis is:
-      - Max Pitch: ${processorResponse.audioResponse?.max_pitch || "unknown"}
-      - Min Pitch: ${processorResponse.audioResponse?.min_pitch || "unknown"}
-      - Average Intensity: ${processorResponse.audioResponse?.average_intensity || "unknown"}
-      - Sentiment Analysis: 
-          - Label: ${processorResponse.audioResponse?.sentiment?.label || "unknown"}
-          - Score: ${processorResponse.audioResponse?.sentiment?.score || 0}
-      - Transcript: "${processorResponse.audioResponse?.transcript || "No transcript available"}"
+      The user is in a ${processorResponse.audioVideoResponse?.face_emotion || "neutral"} mood.
+      From the voice the emotion is - ${processorResponse.audioVideoResponse?.voice_emotion || "neutral"}
+
+      - Transcript: "${processorResponse.audioVideoResponse?.transcription || "No transcript available"}"
 
       Generate a human-like response to the user's mood.
       Do not use any offensive language.
