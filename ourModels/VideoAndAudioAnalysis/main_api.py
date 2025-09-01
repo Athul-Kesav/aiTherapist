@@ -9,7 +9,7 @@ from frame_utils import extract_frames
 from collections import Counter
 
 app = Flask(__name__)
-PORT = 5000
+PORT = 5173
 
 @app.route("/", methods=["GET"])
 def root():
