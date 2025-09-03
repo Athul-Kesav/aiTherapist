@@ -17,7 +17,6 @@ export default function Home() {
           <div className="blob4 z-10"></div>
         </div>
         <h1 className="text-white font-alohaMagazine  pointer-events-none z-40 text-5xl sm:text-7xl italic absolute top-1/2 left-1/2 origin-center transform -translate-x-1/2 -translate-y-1/2  ">
-          
           EmpathAIse
           <p className="text-lg sm:text-lg font-montserrat text-center z-10 absolute left-1/2 transform -translate-x-1/2 font-sans not-italic w-full">
             An AI-powered friend
