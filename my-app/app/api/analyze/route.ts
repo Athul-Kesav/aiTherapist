@@ -11,6 +11,8 @@ type CustomError = Error & {
   config?: unknown;
 };
 
+const AI_MODEL = "llama3.2:latest"
+
 
 // load .env variables
 dotenv.config();
@@ -89,7 +91,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     } else {
       // If textPrompt is provided, append it to the context
       const llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "mistral",
+        model: AI_MODEL,
         prompt: `${textPrompt}`,
         max_tokens: 50,
         temperature: 0.8,
@@ -161,7 +163,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const llmResponse = await axios.post(
       `${llmEndpoint}`,
       {
-        model: "mistral",
+        model: AI_MODEL,
         prompt: promptText,
         max_tokens: 50,
         temperature: 0.8,
