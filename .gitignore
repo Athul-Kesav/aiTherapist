@@ -9,6 +9,7 @@
 #environment files
 .env
 /myenv
+/ourModels/VideoAndAudioAnalysis/venv
 
 # temp files
 *.wav

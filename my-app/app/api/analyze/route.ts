@@ -53,7 +53,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const fileField = formData.get("file");
 
     if (!textPrompt) {
-      
+
       if (!fileField) {
         return NextResponse.json(
           { error: "No video file provided." },
@@ -75,16 +75,16 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (llmResponse && llmResponse.data && llmResponse.data.context) {
         context = llmResponse.data.context;
       }
-  
+
       saveContext(context);
-  
+
       console.log("context saved")
 
       console.log("Response from LLM for text prompt sent")
       return NextResponse.json({
         "response": llmResponse?.data?.response || "No response available"
       });
-      
+
     }
 
     console.log("Accessing file field")
@@ -112,7 +112,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       audioVideoResponse: audioVideoData,
     }
 
-    
+
     const promptText = `
       The user is in a ${processorResponse.audioVideoResponse?.face_emotion || "neutral"} mood.
       From the voice the emotion is - ${processorResponse.audioVideoResponse?.voice_emotion || "neutral"}
@@ -127,18 +127,18 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     console.log("Sending data to LLM")
     console.log(promptText)
-    
+
     // Send the processed data to the LLM endpoint
 
     llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "llama3.2:3b",
-        prompt: `${promptText}`,
-        max_tokens: 25,
-        temperature: 0.8,
-        top_p: 0.5,
-        stream: false,
-        context: context
-      }
+      model: "llama3.2:3b",
+      prompt: `${promptText}`,
+      max_tokens: 25,
+      temperature: 0.8,
+      top_p: 0.5,
+      stream: false,
+      context: context
+    }
     )
 
     if (llmResponse && llmResponse.data && llmResponse.data.context) {
@@ -154,8 +154,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       "response": llmResponse?.data?.response || "No response available"
     });
 
-  } catch (error) {
-    console.error("Error processing video:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error processing video:", {
+      message: error?.message,
+      stack: error?.stack,
+      response: error?.response?.data,
+      config: error?.config,
+    });
+
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error?.message },
+      { status: 500 }
+    );
   }
+
 }
