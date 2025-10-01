@@ -6,14 +6,43 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 
+type CustomError = Error & {
+  response?: { data?: unknown };
+  config?: unknown;
+};
+
+const AI_MODEL = "llama3.2:latest"
+
+
 // load .env variables
 dotenv.config();
+
+export async function OPTIONS() {
+  const res = new NextResponse(null, { status: 200 });
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res;
+}
+
+function withCors(res: NextResponse) {
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res;
+}
 
 
 
 // 1. Point to context.txt in the same folder
 const contextFilePath = path.join(process.cwd(), "app", "api", "analyze", "context.json");
 
+export async function GET(): Promise<NextResponse> {
+
+  return withCors(NextResponse.json({
+    "message": "Hello from the Backend"
+  }))
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
 
@@ -44,33 +73,34 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   console.log("Request received")
 
-  let llmResponse: { data: { response: string; context: number[] } } | null = null;
+  // let llmResponse: { data: { response: string; context: number[] } } | null = null;
   try {
-
     // Parse the incoming form data
     const formData = await request.formData();
     const textPrompt = formData.get("textPrompt") as string;
     const fileField = formData.get("file");
 
+    // If only text is provided
     if (!textPrompt) {
-
       if (!fileField) {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: "No video file provided." },
           { status: 400 }
-        );
+        ))
       }
     } else {
       // If textPrompt is provided, append it to the context
-      llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "llama3.2:3b",
+      const llmResponse = await axios.post(`${llmEndpoint}`, {
+        model: AI_MODEL,
         prompt: `${textPrompt}`,
         max_tokens: 50,
         temperature: 0.8,
         top_p: 0.5,
         stream: false,
         context: context,
-      })
+      }, {
+        headers: { "Content-Type": "application/json" }
+      });
 
       if (llmResponse && llmResponse.data && llmResponse.data.context) {
         context = llmResponse.data.context;
@@ -81,9 +111,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       console.log("context saved")
 
       console.log("Response from LLM for text prompt sent")
-      return NextResponse.json({
+      return withCors(NextResponse.json({
         "response": llmResponse?.data?.response || "No response available"
-      });
+      }))
 
     }
 
@@ -130,16 +160,21 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // Send the processed data to the LLM endpoint
 
-    llmResponse = await axios.post(`${llmEndpoint}`, {
-      model: "llama3.2:3b",
-      prompt: `${promptText}`,
-      max_tokens: 25,
-      temperature: 0.8,
-      top_p: 0.5,
-      stream: false,
-      context: context
-    }
-    )
+    const llmResponse = await axios.post(
+      `${llmEndpoint}`,
+      {
+        model: AI_MODEL,
+        prompt: promptText,
+        max_tokens: 50,
+        temperature: 0.8,
+        top_p: 0.5,
+        stream: false,
+        context: context
+      },
+      {
+        headers: { "Content-Type": "application/json" }
+      }
+    );
 
     if (llmResponse && llmResponse.data && llmResponse.data.context) {
       context = llmResponse.data.context;
@@ -150,22 +185,23 @@ export async function POST(request: Request): Promise<NextResponse> {
     console.log("context saved")
 
     console.log("Response sent to client")
-    return NextResponse.json({
+    return withCors(NextResponse.json({
       "response": llmResponse?.data?.response || "No response available"
-    });
+    }))
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const e = error as CustomError;
     console.error("Error processing video:", {
-      message: error?.message,
-      stack: error?.stack,
-      response: error?.response?.data,
-      config: error?.config,
+      message: e.message,
+      stack: e.stack,
+      response: e.response?.data,
+      config: e.config,
     });
 
-    return NextResponse.json(
-      { error: "Internal Server Error", details: error?.message },
+    return withCors(NextResponse.json(
+      { error: "Internal Server Error", details: e.message },
       { status: 500 }
-    );
+    ))
   }
 
 }

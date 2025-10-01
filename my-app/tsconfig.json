@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+     "jsx": "preserve",        // important for Next.js
+    "jsxImportSource": "react",
+    "types": ["react", "react-dom"],
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -11,7 +14,6 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
     "incremental": true,
     "plugins": [
       {

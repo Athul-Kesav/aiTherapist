@@ -10,6 +10,7 @@
 .env
 /myenv
 /ourModels/VideoAndAudioAnalysis/venv
+/ourModels/VideoAndAudioAnalysis/__pycache__
 
 # temp files
 *.wav

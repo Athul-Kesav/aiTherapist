@@ -97,33 +97,35 @@ export default function Dude() {
 
   // Send the recorded video blob to a dummy backend.
   async function handleSend() {
-
-    // Reset recorded video on clicking send.
-    setRecordedVideo(null);
-    setVideoBlob(null);
     setChatStarted(true);
-
     setAiResponse("Analyzing...");
+
     const formData = new FormData();
+
     if (videoBlob) {
       formData.append("file", videoBlob, "recorded_video.webm");
-    } else if(textPrompt){
-      formData.append("textPrompt", textPrompt);
+    } else if (textPrompt.trim()) {
+      formData.append("textPrompt", textPrompt.trim());
     } else {
       console.error("No video or text prompt to send");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/api/analyze", formData);
+      const response = await axios.post("http://192.168.30.151:3000/api/analyze", formData);
       console.log("Video/Text sent to backend", response);
       const data = response.data;
       setAiResponse(data.response);
-      console.log("Response from backend:", data.response);
+
+      // ✅ clear only after sending successfully
+      setRecordedVideo(null);
+      setVideoBlob(null);
+      setTextPrompt("");
     } catch (error) {
       console.error("Error sending video/text:", error);
     }
   }
+
 
   return (
     <div
