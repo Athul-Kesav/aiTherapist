@@ -15,9 +15,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
 # ---------------- App code ----------------
 WORKDIR /app
 
@@ -40,7 +37,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Expose ports
-EXPOSE 3000 5173 11434
+EXPOSE 3000 5173
 
 # Start everything
 CMD ["/app/entrypoint.sh"]

@@ -61,7 +61,7 @@ def analyze_video():
         })
 
     finally:
-        # 🔥 Cleanup temp files
+        # Cleanup temp files
         if os.path.exists(video_path):
             os.remove(video_path)
         if os.path.exists(audio_path):

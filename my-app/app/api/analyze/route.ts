@@ -11,7 +11,7 @@ type CustomError = Error & {
   config?: unknown;
 };
 
-const AI_MODEL = "llama3.2:latest"
+const AI_MODEL = process.env.AI_MODEL
 
 
 // load .env variables
@@ -40,8 +40,8 @@ const contextFilePath = path.join(process.cwd(), "app", "api", "analyze", "conte
 export async function GET(): Promise<NextResponse> {
 
   return withCors(NextResponse.json({
-      "message":"Hello from the Backend"
-    }))
+    "message": "Hello from the Backend"
+  }))
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -130,7 +130,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const audioVideoFormData = new FormData();
     audioVideoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const audioVideoResponse = await fetch(`${audioVideoEndpoint}`, {
+    const audioVideoResponse = await fetch(`${audioVideoEndpoint}/analyze`, {
       method: "POST",
       body: audioVideoFormData,
     });
@@ -150,6 +150,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       - Transcript: "${processorResponse.audioVideoResponse?.transcription || "No transcript available"}"
 
       Generate a human-like response to the user's mood.
+      Act like a mental therapist.
       Do not use any offensive language.
       Make it sound like a conversation.
       If the question is unclear or vague, tell the user to provide more context.
