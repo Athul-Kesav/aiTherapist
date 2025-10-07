@@ -92,7 +92,14 @@ export async function POST(request: Request): Promise<NextResponse> {
       // If textPrompt is provided, append it to the context
       const llmResponse = await axios.post(`${llmEndpoint}`, {
         model: AI_MODEL,
-        prompt: `${textPrompt}`,
+        prompt: `
+          ${textPrompt} 
+          
+          You are a compassionate, human-like mental health therapist.
+          Speak in a calm, conversational, and empathetic tone.
+          Keep responses brief and natural — like a real chat, not a lecture, max 4 lines.
+          Never use offensive or judgmental language.
+          If the user's question is unclear or lacks context, gently ask for clarification before responding.`,
         max_tokens: 50,
         temperature: 0.8,
         top_p: 0.5,
@@ -152,7 +159,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       Generate a human-like response to the user's mood.
       Act like a mental therapist.
       Do not use any offensive language.
-      Make it sound like a conversation.
+      Make it sound like a conversation. Keep it really short
       If the question is unclear or vague, tell the user to provide more context.
       `;
 

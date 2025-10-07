@@ -6,21 +6,26 @@
 }
 
 @font-face {
-  font-family: 'Aloha Magazine - Demo Version';
-  src: url(/fonts/AlohaMagazine-Demo.otf) format('opentype');
+  font-family: "Aloha Magazine - Demo Version";
+  src: url(/fonts/AlohaMagazine-Demo.otf) format("opentype");
 }
 
 @font-face {
-  font-family: 'Montserrat';
-  src: url(/fonts/Montserrat.ttf) format('truetype');
+  font-family: "Montserrat";
+  src: url(/fonts/Montserrat.ttf) format("truetype");
+}
+
+* {
+  font-family: "Montserrat";
+  font-weight: 300;
 }
 
 .font-alohaMagazine {
-  font-family: 'Aloha Magazine - Demo Version';
+  font-family: "Aloha Magazine - Demo Version";
 }
 
 .font-montserrat {
-  font-family: 'Montserrat';
+  font-family: "Montserrat";
 }
 
 @media (prefers-color-scheme: dark) {
@@ -36,11 +41,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.blob1, .blob2, .blob3, .blob4 {
+.blob1,
+.blob2,
+.blob3,
+.blob4 {
   position: absolute;
   border-radius: 50%;
   filter: blur(50px);
-  mix-blend-mode:hue;
+  mix-blend-mode: hue;
 }
 
 .blob1 {
@@ -49,7 +57,8 @@ body {
   width: 500px;
   height: 500px;
   background: rgba(0, 0, 255, 0.08);
-  animation: blob1 25s ease-in-out infinite, shape1 10s ease-in-out infinite, color1 20s ease-in-out infinite;
+  animation: blob1 25s ease-in-out infinite, shape1 10s ease-in-out infinite,
+    color1 20s ease-in-out infinite;
 }
 
 @keyframes blob1 {
@@ -77,7 +86,8 @@ body {
 }
 
 @keyframes shape1 {
-  0%, 100% {
+  0%,
+  100% {
     border-radius: 50% 50% 50% 50%;
   }
   25% {
@@ -92,7 +102,8 @@ body {
 }
 
 @keyframes color1 {
-  0%, 100% {
+  0%,
+  100% {
     background: rgba(0, 0, 255, 0.2);
   }
   25% {
@@ -112,7 +123,8 @@ body {
   width: 400px;
   height: 400px;
   background: rgba(0, 0, 139, 0.08);
-  animation: blob2 30s ease-in-out infinite, shape2 12s ease-in-out infinite, color2 25s ease-in-out infinite;
+  animation: blob2 30s ease-in-out infinite, shape2 12s ease-in-out infinite,
+    color2 25s ease-in-out infinite;
 }
 
 @keyframes blob2 {
@@ -137,7 +149,8 @@ body {
 }
 
 @keyframes shape2 {
-  0%, 100% {
+  0%,
+  100% {
     border-radius: 50% 50% 50% 50%;
   }
   25% {
@@ -152,7 +165,8 @@ body {
 }
 
 @keyframes color2 {
-  0%, 100% {
+  0%,
+  100% {
     background: rgba(0, 0, 139, 0.08);
   }
   25% {
@@ -172,7 +186,8 @@ body {
   width: 450px;
   height: 450px;
   background: rgba(0, 0, 205, 0.08);
-  animation: blob3 35s ease-in-out infinite, shape3 14s ease-in-out infinite, color3 30s ease-in-out infinite;
+  animation: blob3 35s ease-in-out infinite, shape3 14s ease-in-out infinite,
+    color3 30s ease-in-out infinite;
 }
 
 @keyframes blob3 {
@@ -197,7 +212,8 @@ body {
 }
 
 @keyframes shape3 {
-  0%, 100% {
+  0%,
+  100% {
     border-radius: 50% 50% 50% 50%;
   }
   25% {
@@ -212,7 +228,8 @@ body {
 }
 
 @keyframes color3 {
-  0%, 100% {
+  0%,
+  100% {
     background: rgba(0, 0, 205, 0.08);
   }
   25% {
@@ -232,7 +249,8 @@ body {
   width: 450px;
   height: 450px;
   background: rgba(104, 150, 197, 0.623);
-  animation: blob4 40s ease-in-out infinite, shape4 16s ease-in-out infinite, color4 35s ease-in-out infinite;
+  animation: blob4 40s ease-in-out infinite, shape4 16s ease-in-out infinite,
+    color4 35s ease-in-out infinite;
 }
 
 @keyframes blob4 {
@@ -260,7 +278,8 @@ body {
 }
 
 @keyframes shape4 {
-  0%, 100% {
+  0%,
+  100% {
     border-radius: 50% 50% 50% 50%;
   }
   25% {
@@ -275,7 +294,8 @@ body {
 }
 
 @keyframes color4 {
-  0%, 100% {
+  0%,
+  100% {
     background: rgba(104, 150, 197, 0.623);
   }
   25% {
