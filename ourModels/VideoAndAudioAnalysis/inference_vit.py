@@ -14,7 +14,7 @@ model = timm.create_model(
     img_size=96               # match 96x96 training resolution
 )
 # Load checkpoint with non-strict to accommodate head.1 vs head mismatch
-state = torch.load('best_vit_model.pth', map_location='cpu')
+state = torch.load('best_vit_model.pth', map_location='cpu', weights_only=False)
 model.load_state_dict(state, strict=False)
 model.eval()
 
