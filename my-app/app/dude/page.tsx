@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import Image from "next/image"
+import Image from "next/image";
 
 // --- Types
 type Sender = "me" | "ai";
@@ -192,8 +192,6 @@ export default function DudeChat() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const liveVideoRef = useRef<HTMLVideoElement | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-
   const [isRecording, setIsRecording] = useState(false);
   const [recordedURL, setRecordedURL] = useState<string | null>(null); // preview for unsent recording
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -238,66 +236,76 @@ export default function DudeChat() {
     };
   }, [recordedURL]);
 
-  // --- Recording logic
-  const startRecording = async () => {
+  async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-
       mediaStreamRef.current = stream;
 
-      // Attach the live stream to the video element
-      const videoEl = liveVideoRef.current;
-      if (videoEl) {
-        videoEl.srcObject = stream;
-        videoEl.muted = true; // avoid feedback
-        videoEl.playsInline = true;
-        videoEl.onloadedmetadata = () => {
-          videoEl.play().catch((err) => console.error("play() failed:", err));
-        };
-      }
+      // ensure overlay/video element mounts first
+      setIsRecording(true);
 
-      const mediaRecorder = new MediaRecorder(stream);
-      recordedChunksRef.current = [];
+      // attach stream on next paint (video element will exist)
+      requestAnimationFrame(async () => {
+        if (!liveVideoRef.current) return;
+        try {
+          // prefer srcObject
+          // @ts-ignore
+          liveVideoRef.current.srcObject = stream;
+          liveVideoRef.current.muted = true;
+          liveVideoRef.current.playsInline = true;
+          await liveVideoRef.current.play().catch(() => {});
+        } catch (err) {
+          console.warn("Live video attach/play failed:", err);
+        }
+      });
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) recordedChunksRef.current.push(event.data);
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream, {
+        mimeType: "video/webm; codecs=vp8,opus",
+      });
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, {
-          type: "video/webm",
-        });
-        setRecordedURL(URL.createObjectURL(blob));
+      recorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        setRecordedBlob(blob);
+        setRecordedURL(url);
 
-        // Stop camera feed
+        // clear live preview srcObject (video element will be hidden)
+        if (liveVideoRef.current) {
+          try {
+            // @ts-ignore
+            liveVideoRef.current.srcObject = null;
+          } catch (err) {
+            // ignore
+          }
+        }
+
+        // Stop tracks
         stream.getTracks().forEach((t) => t.stop());
-<<<<<<< HEAD
-        setIsRecording(false);
-=======
         mediaStreamRef.current = null;
         mediaRecorderRef.current = null;
-
-        // generate thumbnail in background (optional)
-        // const thumb = await createVideoThumbnail(url);
-
-        // NOTE: we DO NOT auto-send. User must click send to upload.
->>>>>>> b0b5c281064dbdcd1b09fc7d3b79c4f8636c66e6
       };
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setIsRecording(true);
+      mediaRecorderRef.current = recorder;
+      recorder.start();
     } catch (err) {
-      console.error("Error starting recording:", err);
+      console.error("getUserMedia failed", err);
+      setIsRecording(false);
     }
-  };
+  }
 
   function stopRecording() {
     const rec = mediaRecorderRef.current;
     if (rec && rec.state === "recording") rec.stop();
+
+    // keep isRecording false so overlay switches to recorded preview
     setIsRecording(false);
   }
 
@@ -451,16 +459,16 @@ export default function DudeChat() {
       {(isRecording || recordedURL) && (
         <div className="fixed left-1/2 transform -translate-x-1/2 bottom-28 z-40 w-[90%] max-w-md p-2 rounded-xl bg-black/30 border border-white/10 backdrop-blur">
           {isRecording ? (
-            <div className="relative">
+            <div>
               <video
                 ref={liveVideoRef}
                 autoPlay
                 muted
                 playsInline
-                className="w-full rounded-lg"
+                className="w-full rounded-lg object-cover h-48"
               />
-              <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-md font-montserrat">
-                ● Recording...
+              <div className="text-xs text-white/70 mt-1 font-montserrat">
+                Recording… click the stop button to finish
               </div>
             </div>
           ) : recordedURL ? (
