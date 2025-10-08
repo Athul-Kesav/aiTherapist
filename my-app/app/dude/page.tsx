@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import Image from "next/image"
 
 // --- Types
 type Sender = "me" | "ai";
@@ -25,17 +26,17 @@ const BACKEND_ANALYZE = "http://192.168.30.151:3000/api/analyze"; // update if n
 // --- Helpers
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-async function blobToDataURL(blob: Blob) {
+/* async function blobToDataURL(blob: Blob) {
   return new Promise<string>((res, rej) => {
     const reader = new FileReader();
     reader.onload = () => res(String(reader.result));
     reader.onerror = rej;
     reader.readAsDataURL(blob);
   });
-}
+} */
 
 // Create a thumbnail for a video blob by drawing first frame to canvas.
-async function createVideoThumbnail(blobUrl: string) {
+/* async function createVideoThumbnail(blobUrl: string) {
   return new Promise<string | undefined>((resolve) => {
     const video = document.createElement("video");
     video.src = blobUrl;
@@ -61,13 +62,14 @@ async function createVideoThumbnail(blobUrl: string) {
       } catch (e) {
         cleanup();
         resolve(undefined);
+        console.error(e)
       }
     });
 
     // If seeking/timeouts fail, fallback after some time
     setTimeout(() => resolve(undefined), 3000);
   });
-}
+} */
 
 // --- Components
 function MessageBubble({
@@ -105,7 +107,7 @@ function MessageBubble({
                 className="relative cursor-pointer"
                 onClick={() => onPlay(msg.content)}
               >
-                <img
+                <Image
                   src={msg.thumbnail}
                   alt="video thumb"
                   className="w-48 h-28 object-cover"
@@ -143,7 +145,7 @@ function MessageBubble({
   );
 }
 
-function TypingBubble() {
+/* function TypingBubble() {
   // WhatsApp-like three bouncing dots
   const dot = (i: number) => (
     <motion.span
@@ -176,7 +178,7 @@ function TypingBubble() {
       </div>
     </motion.div>
   );
-}
+} */
 
 export default function DudeChat() {
   // Messages state (chat history)
@@ -234,7 +236,7 @@ export default function DudeChat() {
       }
       if (recordedURL) URL.revokeObjectURL(recordedURL);
     };
-  }, []);
+  }, [recordedURL]);
 
   // --- Recording logic
   const startRecording = async () => {
@@ -272,7 +274,17 @@ export default function DudeChat() {
 
         // Stop camera feed
         stream.getTracks().forEach((t) => t.stop());
+<<<<<<< HEAD
         setIsRecording(false);
+=======
+        mediaStreamRef.current = null;
+        mediaRecorderRef.current = null;
+
+        // generate thumbnail in background (optional)
+        // const thumb = await createVideoThumbnail(url);
+
+        // NOTE: we DO NOT auto-send. User must click send to upload.
+>>>>>>> b0b5c281064dbdcd1b09fc7d3b79c4f8636c66e6
       };
 
       mediaRecorderRef.current = mediaRecorder;
