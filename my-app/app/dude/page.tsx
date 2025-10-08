@@ -252,7 +252,6 @@ export default function DudeChat() {
         if (!liveVideoRef.current) return;
         try {
           // prefer srcObject
-          // @ts-ignore
           liveVideoRef.current.srcObject = stream;
           liveVideoRef.current.muted = true;
           liveVideoRef.current.playsInline = true;
@@ -280,10 +279,10 @@ export default function DudeChat() {
         // clear live preview srcObject (video element will be hidden)
         if (liveVideoRef.current) {
           try {
-            // @ts-ignore
             liveVideoRef.current.srcObject = null;
           } catch (err) {
             // ignore
+            console.warn("Live video clear srcObject failed:", err);
           }
         }
 
