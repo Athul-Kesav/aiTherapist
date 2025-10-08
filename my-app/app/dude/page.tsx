@@ -190,6 +190,8 @@ export default function DudeChat() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const liveVideoRef = useRef<HTMLVideoElement | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordedURL, setRecordedURL] = useState<string | null>(null); // preview for unsent recording
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -235,52 +237,51 @@ export default function DudeChat() {
   }, []);
 
   // --- Recording logic
-  async function startRecording() {
+  const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
+
       mediaStreamRef.current = stream;
-      if (liveVideoRef.current) {
-        liveVideoRef.current.srcObject = stream;
-        liveVideoRef.current.play().catch(() => {});
+
+      // Attach the live stream to the video element
+      const videoEl = liveVideoRef.current;
+      if (videoEl) {
+        videoEl.srcObject = stream;
+        videoEl.muted = true; // avoid feedback
+        videoEl.playsInline = true;
+        videoEl.onloadedmetadata = () => {
+          videoEl.play().catch((err) => console.error("play() failed:", err));
+        };
       }
 
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(stream, {
-        mimeType: "video/webm; codecs=vp8,opus",
-      });
+      const mediaRecorder = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
 
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordedChunksRef.current.push(event.data);
       };
 
-      recorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        setRecordedBlob(blob);
-        setRecordedURL(url);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, {
+          type: "video/webm",
+        });
+        setRecordedURL(URL.createObjectURL(blob));
 
-        // Stop tracks
+        // Stop camera feed
         stream.getTracks().forEach((t) => t.stop());
-        mediaStreamRef.current = null;
-        mediaRecorderRef.current = null;
-
-        // generate thumbnail in background (optional)
-        const thumb = await createVideoThumbnail(url);
-
-        // NOTE: we DO NOT auto-send. User must click send to upload.
+        setIsRecording(false);
       };
 
-      mediaRecorderRef.current = recorder;
-      recorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error("getUserMedia failed", err);
-      setIsRecording(false);
+      console.error("Error starting recording:", err);
     }
-  }
+  };
 
   function stopRecording() {
     const rec = mediaRecorderRef.current;
@@ -438,15 +439,16 @@ export default function DudeChat() {
       {(isRecording || recordedURL) && (
         <div className="fixed left-1/2 transform -translate-x-1/2 bottom-28 z-40 w-[90%] max-w-md p-2 rounded-xl bg-black/30 border border-white/10 backdrop-blur">
           {isRecording ? (
-            <div>
+            <div className="relative">
               <video
                 ref={liveVideoRef}
                 autoPlay
                 muted
+                playsInline
                 className="w-full rounded-lg"
               />
-              <div className="text-xs text-white/70 mt-1 font-montserrat">
-                Recording… click the stop button to finish
+              <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-md font-montserrat">
+                ● Recording...
               </div>
             </div>
           ) : recordedURL ? (
