@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import Image from "next/image";
 
 // --- Types
 type Sender = "me" | "ai";
@@ -21,7 +20,7 @@ type Message = {
 
 // --- Constants
 const STORAGE_KEY = "dude_messages_v1";
-const BACKEND_ANALYZE = "http://192.168.30.151:3000/api/analyze"; // update if needed
+const BACKEND_ANALYZE = "/api/analyze"; // update if needed
 
 // --- Helpers
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -107,7 +106,8 @@ function MessageBubble({
                 className="relative cursor-pointer"
                 onClick={() => onPlay(msg.content)}
               >
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={msg.thumbnail}
                   alt="video thumb"
                   className="w-48 h-28 object-cover"
@@ -236,30 +236,25 @@ export default function DudeChat() {
     };
   }, [recordedURL]);
 
+  useEffect(() => {
+    if (isRecording && liveVideoRef.current && mediaStreamRef.current) {
+      const videoEl = liveVideoRef.current;
+      videoEl.srcObject = mediaStreamRef.current;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.play().catch((err) => console.warn("Video play failed:", err));
+    }
+  }, [isRecording]);
+
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
+
       mediaStreamRef.current = stream;
-
-      // ensure overlay/video element mounts first
       setIsRecording(true);
-
-      // attach stream on next paint (video element will exist)
-      requestAnimationFrame(async () => {
-        if (!liveVideoRef.current) return;
-        try {
-          // prefer srcObject
-          liveVideoRef.current.srcObject = stream;
-          liveVideoRef.current.muted = true;
-          liveVideoRef.current.playsInline = true;
-          await liveVideoRef.current.play().catch(() => {});
-        } catch (err) {
-          console.warn("Live video attach/play failed:", err);
-        }
-      });
 
       chunksRef.current = [];
       const recorder = new MediaRecorder(stream, {
@@ -268,28 +263,6 @@ export default function DudeChat() {
 
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        setRecordedBlob(blob);
-        setRecordedURL(url);
-
-        // clear live preview srcObject (video element will be hidden)
-        if (liveVideoRef.current) {
-          try {
-            liveVideoRef.current.srcObject = null;
-          } catch (err) {
-            // ignore
-            console.warn("Live video clear srcObject failed:", err);
-          }
-        }
-
-        // Stop tracks
-        stream.getTracks().forEach((t) => t.stop());
-        mediaStreamRef.current = null;
-        mediaRecorderRef.current = null;
       };
 
       mediaRecorderRef.current = recorder;
@@ -301,11 +274,55 @@ export default function DudeChat() {
   }
 
   function stopRecording() {
-    const rec = mediaRecorderRef.current;
-    if (rec && rec.state === "recording") rec.stop();
+    const recorder = mediaRecorderRef.current;
+    const stream = mediaStreamRef.current;
 
-    // keep isRecording false so overlay switches to recorded preview
-    setIsRecording(false);
+    if (!recorder || recorder.state !== "recording") return;
+
+    recorder.onstop = async () => {
+      try {
+        // Combine recorded chunks into a Blob
+        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        // Reset chunk buffer
+        chunksRef.current = [];
+
+        // Update state for playback preview
+        setRecordedBlob(blob);
+        setRecordedURL(url);
+        setIsRecording(false);
+
+        // Stop all active media tracks (camera + mic)
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+
+        // Safely clear live preview
+        if (liveVideoRef.current) {
+          try {
+            liveVideoRef.current.srcObject = null;
+            liveVideoRef.current.pause();
+          } catch (err) {
+            console.warn("Failed to clear live video stream:", err);
+          }
+        }
+
+        // Cleanup refs
+        mediaStreamRef.current = null;
+        mediaRecorderRef.current = null;
+      } catch (err) {
+        console.error("Error while stopping recording:", err);
+        setIsRecording(false);
+      }
+    };
+
+    // Stop recording — triggers the onstop handler above
+    try {
+      recorder.stop();
+    } catch (err) {
+      console.error("Failed to stop recorder:", err);
+    }
   }
 
   function handleDeleteRecording() {
@@ -330,25 +347,32 @@ export default function DudeChat() {
         id: uid(),
         from: "me",
         type: "video",
-        content: recordedURL!,
+        content: recordedURL!, // this is the preview url you created earlier
         ts: Date.now(),
       };
       pushMessage(myMsg);
 
-      // try send to backend
       const form = new FormData();
       form.append("file", recordedBlob, "recorded_video.webm");
 
-      // clear local preview immediately (user already 'sent')
+      // quick debug: make sure blob exists
+      console.log("Uploading blob:", recordedBlob, "size:", recordedBlob?.size);
+
+      // clear preview UI immediately (user already "sent")
       setRecordedURL(null);
       setRecordedBlob(null);
 
       setIsAwaitingResponse(true);
       try {
-        const res = await axios.post(BACKEND_ANALYZE, form, {
-          headers: { "Content-Type": "multipart/form-data" },
+        // IMPORTANT: do NOT set Content-Type manually — let the browser add the boundary
+        // const res = await axios.post(BACKEND_ANALYZE, form);
+        const res = await fetch("http://localhost:3000/api/analyze", {
+          method: "POST",
+          body: form,
         });
-        const aiText = res?.data?.response || "(no response)";
+        const resJson = await res.json();
+        console.log("Response from /api/analyze:", resJson);
+        const aiText = resJson?.response || "(no response)";
         pushMessage({
           id: uid(),
           from: "ai",
@@ -356,17 +380,22 @@ export default function DudeChat() {
           content: aiText,
           ts: Date.now(),
         });
-      } catch (e) {
-        console.error("Failed to upload video", e);
+      } catch (err: unknown) {
+        console.error("Failed to upload recorded video:", err);
+        // surface server error message if available
+        const errMsg = "Error analyzing recorded video.";
         pushMessage({
           id: uid(),
           from: "ai",
           type: "text",
-          content: "Error analyzing video.",
+          content: `Error analyzing recorded video from frontend: ${String(
+            errMsg
+          )}`,
           ts: Date.now(),
         });
+      } finally {
+        setIsAwaitingResponse(false);
       }
-      setIsAwaitingResponse(false);
 
       return;
     }

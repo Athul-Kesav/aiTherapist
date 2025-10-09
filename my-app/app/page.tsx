@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
 
-  
   return (
     <>
       <div className="h-screen w-screen flex flex-col justify-center items-center -z-40 ">
@@ -54,9 +53,12 @@ export default function Home() {
               </svg>
             </a>
           </div> */}
-          <ShinyButton btnText="Get Started" cta={() => {
-            router.push("/dude")
-          }}/>
+          <ShinyButton
+            btnText="Get Started"
+            cta={() => {
+              router.push("/dude");
+            }}
+          />
         </div>
       </div>
     </>
