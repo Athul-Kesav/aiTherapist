@@ -6,23 +6,69 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 
+type CustomError = Error & {
+  response?: { data?: unknown };
+  config?: unknown;
+};
+
+const AI_MODEL = process.env.AI_MODEL
+
+
 // load .env variables
 dotenv.config();
+
+export async function OPTIONS() {
+  const res = new NextResponse(null, { status: 200 });
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res;
+}
+
+function withCors(res: NextResponse) {
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return res;
+}
 
 
 
 // 1. Point to context.txt in the same folder
 const contextFilePath = path.join(process.cwd(), "app", "api", "analyze", "context.json");
 
+export async function GET(): Promise<NextResponse> {
+
+  return withCors(NextResponse.json({
+    "message": "Hello from the Backend"
+  }))
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
 
   console.log("Backend Reached")
 
-  const audioEndpoint = process.env.AUDIO_ENDPOINT;
-  const videoEndpoint = process.env.VIDEO_ENDPOINT;
+  const audioVideoEndpoint = process.env.AUDIO_VIDEO_ENDPOINT;
   const llmEndpoint = process.env.LLM_ENDPOINT;
   const MAX_CONTEXT_TOKENS = process.env.MAX_CONTEXT_TOKENS ? parseInt(process.env.MAX_CONTEXT_TOKENS) : 2048;
+  const systemPrompt = `
+    SYSTEM
+    You are an empathetic, human-like AI mental-health assistant called "EmpathAIse". Your tone is warm, non-judgmental, concise, and genuine — like a calm, attentive human listener. Always:
+      1. Reflect the user's emotion first (one short sentence that names the feeling).
+      2. Validate the feeling (one short sentence: "That makes sense" / "I hear you").
+      3. Offer one practical, immediate coping step the user can try in the next 5 minutes.
+      4. Ask one gentle clarifying question only if it will help provide safer or more useful guidance.
+      5. Avoid giving medical diagnoses or prescribing medication. Use conditional language ("you might consider", "it may help to...").
+      6. If the user expresses self-harm intent or imminent danger, immediately:
+        - Use calm, direct triage language: ask if they are safe right now, advise contacting local emergency services if they have a plan, and give brief steps to stay safe (do not provide specific self-harm instructions).
+        - Recommend contacting a crisis hotline and a human professional and escalate (do not attempt to counsel through an emergency).
+      7. Provide a short signpost to seek professional help when appropriate (clinician, emergency contact).
+      8. End with a short supportive closing sentence and offer to stay with them or continue.
+      9. Keep the conversation as ptomistic as possible.
+
+    Keep replies approximately 2-6 sentences (unless the user is in crisis—then be brief, clear, and directive). Always be respectful, patient, and human-like.
+    Begin.
+  `
 
   function saveContext(context: number[]): void {
     // Ensure context does not exceed MAX_CONTEXT_TOKENS
@@ -45,51 +91,56 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   console.log("Request received")
 
-  let llmResponse: { data: { response: string; context: number[] } } | null = null;
+  // let llmResponse: { data: { response: string; context: number[] } } | null = null;
   try {
-
     // Parse the incoming form data
     const formData = await request.formData();
     const textPrompt = formData.get("textPrompt") as string;
     const fileField = formData.get("file");
 
+    // If only text is provided
     if (!textPrompt) {
-      
       if (!fileField) {
-        return NextResponse.json(
+        return withCors(NextResponse.json(
           { error: "No video file provided." },
           { status: 400 }
-        );
+        ))
       }
     } else {
       // If textPrompt is provided, append it to the context
-      llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "mistral",
-        prompt: `${textPrompt}`,
+      const llmResponse = await axios.post(`${llmEndpoint}`, {
+        model: AI_MODEL,
+        prompt: `
+          ${textPrompt} 
+          ${systemPrompt}`,
         max_tokens: 50,
         temperature: 0.8,
         top_p: 0.5,
         stream: false,
         context: context,
-      })
+      }, {
+        headers: { "Content-Type": "application/json" }
+      });
 
       if (llmResponse && llmResponse.data && llmResponse.data.context) {
         context = llmResponse.data.context;
       }
-  
+
       saveContext(context);
-  
+
       console.log("context saved")
 
-      console.log("Response from LLM for text prompt")
-      return NextResponse.json({
+      console.log("Response from LLM for text prompt sent")
+      return withCors(NextResponse.json({
         "response": llmResponse?.data?.response || "No response available"
-      });
-      
+      }))
+
     }
 
+    console.log("Accessing file field")
     // 'fileField' is a File object (browser/Web API), so convert it to a buffer.
     const videoFile = fileField as File;
+    console.log("File field accessed")
     const arrayBuffer = await videoFile.arrayBuffer();
     const videoBuffer = Buffer.from(arrayBuffer);
 
@@ -97,65 +148,50 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // Prepare a FormData for the /analyze-audio endpoint.
 
-    const audioFormData = new FormData();
-    audioFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const audioResponse = await fetch(`${audioEndpoint}`, {
+    const audioVideoFormData = new FormData();
+    audioVideoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
+    const audioVideoResponse = await fetch(`${audioVideoEndpoint}/analyze`, {
       method: "POST",
-      body: audioFormData,
+      body: audioVideoFormData,
     });
 
-    const audioData = await audioResponse.json();
-
-    // Prepare a FormData for the /analyze-video endpoint.
-
-    const videoFormData = new FormData();
-    videoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
-    const videoResponse = await fetch(`${videoEndpoint}`, {
-      method: "POST",
-      body: videoFormData,
-    });
-
-    const videoData = await videoResponse.json();
+    const audioVideoData = await audioVideoResponse.json();
 
     const processorResponse = {
       message: "Video processed and sent successfully",
-      audioResponse: audioData,
-      videoResponse: videoData,
+      audioVideoResponse: audioVideoData,
     }
 
-    
-    const promptText = `
-      The user is in a ${processorResponse.videoResponse?.mood || "neutral"} mood.
-      The voice analysis is:
-      - Max Pitch: ${processorResponse.audioResponse?.max_pitch || "unknown"}
-      - Min Pitch: ${processorResponse.audioResponse?.min_pitch || "unknown"}
-      - Average Intensity: ${processorResponse.audioResponse?.average_intensity || "unknown"}
-      - Sentiment Analysis: 
-          - Label: ${processorResponse.audioResponse?.sentiment?.label || "unknown"}
-          - Score: ${processorResponse.audioResponse?.sentiment?.score || 0}
-      - Transcript: "${processorResponse.audioResponse?.transcript || "No transcript available"}"
 
-      Generate a human-like response to the user's mood.
-      Do not use any offensive language.
-      Make it sound like a conversation.
-      If the question is unclear or vague, tell the user to provide more context.
+    const promptText = `
+      The user is in a ${processorResponse.audioVideoResponse?.face_emotion || "neutral"} mood.
+      From the voice the emotion is - ${processorResponse.audioVideoResponse?.voice_emotion || "neutral"}
+
+      - Transcript: "${processorResponse.audioVideoResponse?.transcription || "No transcript available"}"
+
+      ${systemPrompt}
       `;
 
     console.log("Sending data to LLM")
     console.log(promptText)
-    
+
     // Send the processed data to the LLM endpoint
 
-    llmResponse = await axios.post(`${llmEndpoint}`, {
-        model: "mistral",
-        prompt: `${promptText}`,
-        max_tokens: 25,
+    const llmResponse = await axios.post(
+      `${llmEndpoint}`,
+      {
+        model: AI_MODEL,
+        prompt: promptText,
+        max_tokens: 50,
         temperature: 0.8,
         top_p: 0.5,
         stream: false,
         context: context
+      },
+      {
+        headers: { "Content-Type": "application/json" }
       }
-    )
+    );
 
     if (llmResponse && llmResponse.data && llmResponse.data.context) {
       context = llmResponse.data.context;
@@ -166,12 +202,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     console.log("context saved")
 
     console.log("Response sent to client")
-    return NextResponse.json({
+    console.log("Response:", llmResponse)
+    return withCors(NextResponse.json({
       "response": llmResponse?.data?.response || "No response available"
+    }))
+
+  } catch (error: unknown) {
+    const e = error as CustomError;
+    console.error("Error processing video:", {
+      message: e.message,
+      stack: e.stack,
+      response: e.response?.data,
+      config: e.config,
     });
 
-  } catch (error) {
-    console.error("Error processing video:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return withCors(NextResponse.json(
+      { error: "Internal Server Error", details: e.message },
+      { status: 500 }
+    ))
   }
+
 }
