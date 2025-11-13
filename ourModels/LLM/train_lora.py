@@ -1,5 +1,6 @@
 """
 Fine-tune a causal LM with LoRA (QLoRA-compatible).
+
 Usage:
     accelerate launch LLM/train_lora.py -- --model_id meta-llama/Llama-3.2-3b
 """
@@ -19,6 +20,9 @@ from transformers import (
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 
+# ---------------------------
+# Parse Command Line Arguments
+# ---------------------------
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--model_id", type=str, default="meta-llama/Llama-3.2-3b")
@@ -37,6 +41,9 @@ def parse_args():
     return p.parse_args()
 
 
+# ---------------------------
+# Main Training Function
+# ---------------------------
 def main():
     args = parse_args()
 
@@ -51,20 +58,28 @@ def main():
 
     # --- STEP 1: Format dataset ---
     def format_example(ex):
+        """Unify dataset into 'User: ... Assistant: ...' format."""
         instr = ex.get("instruction") or ex.get("prompt") or ex.get("text") or ""
-        resp = ex.get("response") or ex.get("completion") or ""
+        resp = ex.get("response") or ex.get("completion") or ex.get("output") or ""
         instr, resp = str(instr).strip(), str(resp).strip()
+
         if not instr and not resp:
-            return None
+            return None  # skip invalid or empty rows
+
         return {"text": f"User: {instr}\nAssistant: {resp}".strip()}
 
     print("🔹 Formatting dataset...")
     dataset = dataset.map(format_example)
-    dataset = dataset.filter(lambda x: x is not None and "text" in x and len(x["text"].strip()) > 0)
+    dataset = dataset.filter(
+        lambda x: x is not None and "text" in x and len(x["text"].strip()) > 0
+    )
 
     # --- STEP 2: Tokenization ---
     def tokenize_fn(examples):
-        valid_texts = [t for t in examples["text"] if isinstance(t, str) and len(t.strip()) > 0]
+        """Tokenize text data safely, skipping invalid entries."""
+        valid_texts = [
+            t for t in examples["text"] if isinstance(t, str) and len(t.strip()) > 0
+        ]
         return tokenizer(
             valid_texts,
             truncation=True,
@@ -76,20 +91,20 @@ def main():
     dataset = dataset.map(tokenize_fn, batched=True, remove_columns=["text"])
     dataset = dataset.filter(lambda x: x.get("input_ids") is not None)
 
-    # --- STEP 3: Load model ---
+    # --- STEP 3: Load Model ---
     print("🔹 Loading model:", args.model_id)
     if args.use_4bit:
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_compute_dtype=torch.float16,
             bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4"
+            bnb_4bit_quant_type="nf4",
         )
         model = AutoModelForCausalLM.from_pretrained(
             args.model_id,
             quantization_config=bnb_config,
             device_map="auto",
-            trust_remote_code=True
+            trust_remote_code=True,
         )
     else:
         try:
@@ -97,23 +112,23 @@ def main():
                 args.model_id,
                 load_in_8bit=True,
                 device_map="auto",
-                trust_remote_code=True
+                trust_remote_code=True,
             )
         except Exception:
             model = AutoModelForCausalLM.from_pretrained(
                 args.model_id,
                 torch_dtype=torch.float16,
                 device_map="auto",
-                trust_remote_code=True
+                trust_remote_code=True,
             )
 
-    # --- STEP 4: Prepare model for LoRA ---
+    # --- STEP 4: Prepare Model for LoRA ---
     try:
         model = prepare_model_for_kbit_training(model)
     except Exception as e:
         print("⚠️ prepare_model_for_kbit_training failed, continuing:", e)
 
-    # Pick target LoRA modules dynamically
+    # Choose LoRA target modules dynamically
     target_modules = ["q_proj", "v_proj"]
     names = [name for name, _ in model.named_modules()]
     available = [m for m in target_modules if any(m in name for name in names)]
@@ -127,11 +142,11 @@ def main():
         target_modules=available,
         lora_dropout=0.05,
         bias="none",
-        task_type="CAUSAL_LM"
+        task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora_config)
 
-    # --- STEP 5: Training setup ---
+    # --- STEP 5: Training Setup ---
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         per_device_train_batch_size=args.per_device_batch_size,
@@ -157,16 +172,19 @@ def main():
         data_collator=data_collator,
     )
 
-    # --- STEP 7: Train ---
+    # --- STEP 7: Start Training ---
     print("🚀 Starting training...")
     trainer.train()
 
-    # --- STEP 8: Save ---
+    # --- STEP 8: Save Model ---
     print("💾 Saving model to:", args.output_dir)
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
     print("✅ Training complete!")
 
 
+# ---------------------------
+# Run Script
+# ---------------------------
 if __name__ == "__main__":
     main()
