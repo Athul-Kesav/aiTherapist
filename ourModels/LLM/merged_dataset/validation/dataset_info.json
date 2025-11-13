@@ -1,0 +1,84 @@
+{
+  "builder_name": "json",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "json",
+  "dataset_size": 25429067,
+  "description": "",
+  "download_checksums": {
+    "/Users/mysha_11/Desktop/Personal/aiTherapist/temp/aiTherapist/ourModels/LLM/train.jsonl": {
+      "num_bytes": 23730960,
+      "checksum": null
+    },
+    "/Users/mysha_11/Desktop/Personal/aiTherapist/temp/aiTherapist/ourModels/LLM/val.jsonl": {
+      "num_bytes": 2950400,
+      "checksum": null
+    },
+    "/Users/mysha_11/Desktop/Personal/aiTherapist/temp/aiTherapist/ourModels/LLM/test.jsonl": {
+      "num_bytes": 2955370,
+      "checksum": null
+    }
+  },
+  "download_size": 29636730,
+  "features": {
+    "prompt": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "completion": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "meta": {
+      "original_index": {
+        "dtype": "int64",
+        "_type": "Value"
+      },
+      "behavior": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "question": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "emotion": {
+        "dtype": "string",
+        "_type": "Value"
+      },
+      "situation": {
+        "dtype": "string",
+        "_type": "Value"
+      }
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 55065797,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 20359020,
+      "num_examples": 31617,
+      "dataset_name": "json"
+    },
+    "validation": {
+      "name": "validation",
+      "num_bytes": 2532594,
+      "num_examples": 3952,
+      "dataset_name": "json"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 2537453,
+      "num_examples": 3953,
+      "dataset_name": "json"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
