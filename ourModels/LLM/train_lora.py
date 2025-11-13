@@ -49,6 +49,15 @@ def main():
 
     print("🔹 Loading dataset from:", args.dataset_path)
     ds = load_from_disk(args.dataset_path)
+
+    # 🧹 Clean up any problematic columns before processing
+    print("📊 Dataset columns before cleaning:", ds.column_names)
+    for split_name, split_data in ds.items() if isinstance(ds, dict) else [("train", ds)]:
+        if "None" in split_data.column_names:
+            print("⚠️ Removing problematic column 'None' from", split_name)
+            split_data = split_data.remove_columns(["None"])
+            ds[split_name] = split_data if isinstance(ds, dict) else split_data
+
     dataset = ds["train"] if "train" in ds else ds
 
     print("🔹 Loading tokenizer:", args.model_id)
