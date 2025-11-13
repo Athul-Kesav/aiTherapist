@@ -22,6 +22,8 @@ WORKDIR /app
 COPY ourModels/VideoAndAudioAnalysis/requirements.txt ./ourModels/VideoAndAudioAnalysis/
 RUN pip install --no-cache-dir -r ourModels/VideoAndAudioAnalysis/requirements.txt
 
+COPY ourModels/TTS/test_bark.py ./ourModels/TTS
+
 # Next.js frontend
 WORKDIR /app/my-app
 COPY my-app/package*.json ./

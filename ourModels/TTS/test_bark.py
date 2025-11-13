@@ -32,9 +32,16 @@ else:
 print("Saved to:", out_path) """
 
 
+
 from bark import generate_audio, preload_models
 from scipy.io.wavfile import write as write_wav
 
+print("Loading models...")
 preload_models()
-audio_array = generate_audio("Hello, this is Bark speaking locally!")
-write_wav("bark_output.wav", 22050, audio_array)
+
+print("Generating speech...")
+audio = generate_audio("Hello, this is Bark speaking inside Docker!")
+
+write_wav("bark_output.wav", 22050, audio)
+print("Saved bark_output.wav")
+
