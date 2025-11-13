@@ -47,45 +47,45 @@ def parse_args():
 def main():
     args = parse_args()
 
+    # --- Load Dataset ---
     print("🔹 Loading dataset from:", args.dataset_path)
     ds = load_from_disk(args.dataset_path)
 
-    # 🧹 Clean up any problematic columns before processing
-    print("📊 Dataset columns before cleaning:", ds.column_names)
-    for split_name, split_data in ds.items() if isinstance(ds, dict) else [("train", ds)]:
-        if "None" in split_data.column_names:
-            print("⚠️ Removing problematic column 'None' from", split_name)
-            split_data = split_data.remove_columns(["None"])
-            ds[split_name] = split_data if isinstance(ds, dict) else split_data
+    # If dataset is a dict (has train/test/val)
+    dataset = ds["train"] if isinstance(ds, dict) and "train" in ds else ds
+    print("📊 Columns before cleaning:", dataset.column_names)
 
-    dataset = ds["train"] if "train" in ds else ds
+    # --- Clean Dataset ---
+    def clean_example(ex):
+        """Clean and unify instruction-response pairs."""
+        instr = ex.get("instruction") or ex.get("prompt") or ex.get("text") or ""
+        resp = ex.get("response") or ex.get("completion") or ex.get("output") or ""
+        if isinstance(instr, list): instr = " ".join(map(str, instr))
+        if isinstance(resp, list): resp = " ".join(map(str, resp))
+        instr, resp = str(instr).strip(), str(resp).strip()
 
+        if not instr and not resp:
+            return None
+
+        return {"text": f"User: {instr}\nAssistant: {resp}".strip()}
+
+    print("🧹 Cleaning dataset...")
+    dataset = dataset.map(clean_example)
+    dataset = dataset.filter(
+        lambda x: x is not None and isinstance(x.get("text"), str) and len(x["text"].strip()) > 0
+    )
+
+    print(f"✅ Cleaned dataset size: {len(dataset)} samples")
+
+    # --- Load Tokenizer ---
     print("🔹 Loading tokenizer:", args.model_id)
     tokenizer = AutoTokenizer.from_pretrained(args.model_id, use_fast=False)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # --- STEP 1: Format dataset ---
-    def format_example(ex):
-        """Unify dataset into 'User: ... Assistant: ...' format."""
-        instr = ex.get("instruction") or ex.get("prompt") or ex.get("text") or ""
-        resp = ex.get("response") or ex.get("completion") or ex.get("output") or ""
-        instr, resp = str(instr).strip(), str(resp).strip()
-
-        if not instr and not resp:
-            return None  # skip invalid or empty rows
-
-        return {"text": f"User: {instr}\nAssistant: {resp}".strip()}
-
-    print("🔹 Formatting dataset...")
-    dataset = dataset.map(format_example)
-    dataset = dataset.filter(
-        lambda x: x is not None and "text" in x and len(x["text"].strip()) > 0
-    )
-
-    # --- STEP 2: Tokenization ---
+    # --- Tokenization ---
     def tokenize_fn(examples):
-        """Tokenize text data safely, skipping invalid entries."""
+        """Tokenize safely (skip None or invalid)."""
         valid_texts = [
             t for t in examples["text"] if isinstance(t, str) and len(t.strip()) > 0
         ]
@@ -100,7 +100,9 @@ def main():
     dataset = dataset.map(tokenize_fn, batched=True, remove_columns=["text"])
     dataset = dataset.filter(lambda x: x.get("input_ids") is not None)
 
-    # --- STEP 3: Load Model ---
+    print(f"✅ Tokenized dataset size: {len(dataset)} samples")
+
+    # --- Load Model ---
     print("🔹 Loading model:", args.model_id)
     if args.use_4bit:
         bnb_config = BitsAndBytesConfig(
@@ -131,20 +133,21 @@ def main():
                 trust_remote_code=True,
             )
 
-    # --- STEP 4: Prepare Model for LoRA ---
+    # --- Prepare Model for LoRA ---
     try:
         model = prepare_model_for_kbit_training(model)
     except Exception as e:
         print("⚠️ prepare_model_for_kbit_training failed, continuing:", e)
 
-    # Choose LoRA target modules dynamically
-    target_modules = ["q_proj", "v_proj"]
-    names = [name for name, _ in model.named_modules()]
-    available = [m for m in target_modules if any(m in name for name in names)]
+    # Pick available LoRA target modules
+    candidate_modules = ["q_proj", "v_proj"]
+    model_modules = [n for n, _ in model.named_modules()]
+    available = [m for m in candidate_modules if any(m in n for n in model_modules)]
     if not available:
-        available = ["q_proj", "k_proj"]
+        available = ["k_proj", "v_proj"]
 
     print("🔹 Using LoRA target modules:", available)
+
     lora_config = LoraConfig(
         r=args.lora_r,
         lora_alpha=args.lora_alpha,
@@ -155,7 +158,7 @@ def main():
     )
     model = get_peft_model(model, lora_config)
 
-    # --- STEP 5: Training Setup ---
+    # --- Training Setup ---
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         per_device_train_batch_size=args.per_device_batch_size,
@@ -172,7 +175,7 @@ def main():
 
     data_collator = DataCollatorForLanguageModeling(tokenizer, mlm=False)
 
-    # --- STEP 6: Trainer ---
+    # --- Trainer ---
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -181,11 +184,11 @@ def main():
         data_collator=data_collator,
     )
 
-    # --- STEP 7: Start Training ---
+    # --- Start Training ---
     print("🚀 Starting training...")
     trainer.train()
 
-    # --- STEP 8: Save Model ---
+    # --- Save Model ---
     print("💾 Saving model to:", args.output_dir)
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
