@@ -10,12 +10,14 @@
 .env
 /myenv
 /ourModels/VideoAndAudioAnalysis/venv
+/ourModels/TTS/.venv
 /ourModels/VideoAndAudioAnalysis/__pycache__
 
 # temp files
 *.wav
 *.jpg
 *.mp4
+*.mpeg
 
 # context file
 /frontend/ai-therapist/app/api/get-video/context.json
