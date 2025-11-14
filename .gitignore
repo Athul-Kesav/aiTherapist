@@ -10,6 +10,7 @@
 .env
 /myenv
 /ourModels/VideoAndAudioAnalysis/venv
+/ourModels/TTS/venv
 /ourModels/TTS/.venv
 /ourModels/VideoAndAudioAnalysis/__pycache__
 
