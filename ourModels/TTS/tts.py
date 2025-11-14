@@ -1,5 +1,5 @@
 # minimal_download.py
-""" from gradio_client import Client, handle_file
+from gradio_client import Client, handle_file
 from pathlib import Path
 import shutil
 
@@ -29,12 +29,13 @@ elif isinstance(result, str) and Path(result).exists():
 else:
     raise RuntimeError(f"Unhandled return: {result}")
 
-print("Saved to:", out_path) """
+print("Saved to:", out_path)
 
-
+""" 
 from bark import generate_audio, preload_models
 from scipy.io.wavfile import write as write_wav
 
 preload_models()
 audio_array = generate_audio("Hello, this is Bark speaking locally!")
 write_wav("bark_output.wav", 22050, audio_array)
+ """
