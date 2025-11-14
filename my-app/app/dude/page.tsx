@@ -16,7 +16,6 @@ type Message = {
   content: string; // text or video URL
   thumbnail?: string; // data URL for video thumbnail
   ts: number;
-  audioBase64?: string;
 };
 
 // --- Constants
@@ -81,7 +80,6 @@ function MessageBubble({
 }) {
   const isMe = msg.from === "me";
 
-
   return (
     <motion.div
       layout
@@ -92,39 +90,14 @@ function MessageBubble({
     >
       <div className={`max-w-[78%] ${isMe ? "text-right" : "text-left"}`}>
         {msg.type === "text" ? (
-          <div className="flex items-center gap-2">
-            <div
-              className={`inline-block p-3 rounded-2xl break-words text-sm sm:text-base ${
-                isMe
-                  ? "bg-indigo-600 text-white rounded-br-none"
-                  : "bg-white/10 text-white rounded-bl-none"
-              }`}
-            >
-              {msg.content}
-            </div>
-
-            {/* AUDIO ICON (AI only, when audio exists) */}
-            {msg.from === "ai" && msg.audioBase64 && (
-              <button
-                onClick={() => {
-                  const audio = new Audio(
-                    `data:audio/mpeg;base64,${msg.audioBase64}`
-                  );
-                  audio.play();
-                }}
-                className="p-2 bg-white/20 hover:bg-white/30 rounded-full"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  fill="white"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M9 8l-4 4 4 4V8zm3-4v16l8-8-8-8z" />
-                </svg>
-              </button>
-            )}
+          <div
+            className={`inline-block p-3 rounded-2xl break-words text-sm sm:text-base ${
+              isMe
+                ? "bg-indigo-600 text-white rounded-br-none"
+                : "bg-white/10 text-white rounded-bl-none"
+            }`}
+          >
+            {msg.content}
           </div>
         ) : (
           <div className="inline-block rounded-2xl overflow-hidden shadow-lg bg-black/30">
@@ -223,12 +196,6 @@ export default function DudeChat() {
   const [recordedURL, setRecordedURL] = useState<string | null>(null); // preview for unsent recording
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
 
-  // Audio Recording States
-  const [isAudioRecording, setIsAudioRecording] = useState(false);
-  const audioRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-
   // UI
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null); // modal
@@ -279,39 +246,6 @@ export default function DudeChat() {
     }
   }, [isRecording]);
 
-  async function startAudioRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      audioChunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        setAudioBlob(blob);
-      };
-
-      audioRecorderRef.current = recorder;
-      recorder.start();
-
-      setIsAudioRecording(true);
-    } catch (err) {
-      console.error("Audio recording failed", err);
-    }
-  }
-
-  function stopAudioRecording() {
-    if (audioRecorderRef.current) {
-      audioRecorderRef.current.stop();
-      setIsAudioRecording(false);
-    }
-  }
-
-
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -338,7 +272,6 @@ export default function DudeChat() {
       setIsRecording(false);
     }
   }
-
 
   function stopRecording() {
     const recorder = mediaRecorderRef.current;
@@ -446,7 +379,6 @@ export default function DudeChat() {
           type: "text",
           content: aiText,
           ts: Date.now(),
-          audioBase64: resJson?.audioBase64 || undefined,
         });
       } catch (err: unknown) {
         console.error("Failed to upload recorded video:", err);
@@ -459,54 +391,6 @@ export default function DudeChat() {
           content: `Error analyzing recorded video from frontend: ${String(
             errMsg
           )}`,
-          ts: Date.now(),
-        });
-      } finally {
-        setIsAwaitingResponse(false);
-      }
-
-      return;
-    }
-
-    // --- AUDIO MESSAGE SEND ---
-    if (audioBlob) {
-      const myMsg: Message = {
-        id: uid(),
-        from: "me",
-        type: "text", // or type: "audio" if you want
-        content: "(voice message)",
-        ts: Date.now(),
-      };
-      pushMessage(myMsg);
-
-      const form = new FormData();
-      form.append("file", audioBlob, "recorded_audio.webm");
-
-      setAudioBlob(null);
-
-      setIsAwaitingResponse(true);
-      try {
-        const res = await fetch(BACKEND_ANALYZE, {
-          method: "POST",
-          body: form,
-        });
-        const resJson = await res.json();
-
-        pushMessage({
-          id: uid(),
-          from: "ai",
-          type: "text",
-          content: resJson?.text || "(no response)",
-          ts: Date.now(),
-          audioBase64: resJson?.audioBase64 || undefined,
-        });
-      } catch (err) {
-        console.error("Failed to send audio", err);
-        pushMessage({
-          id: uid(),
-          from: "ai",
-          type: "text",
-          content: "Error analyzing audio.",
           ts: Date.now(),
         });
       } finally {
@@ -547,7 +431,7 @@ export default function DudeChat() {
           id: uid(),
           from: "ai",
           type: "text",
-          content: "Text parse error",
+          content: "Error contacting server.",
           ts: Date.now(),
         });
       }
@@ -637,35 +521,49 @@ export default function DudeChat() {
         />
 
         {/* Voice stub (keeps original look) */}
-        {/* Audio record button */}
         <button
-          onClick={() =>
-            isAudioRecording ? stopAudioRecording() : startAudioRecording()
-          }
-          className={`p-3 rounded-md cursor-pointer ${
-            isAudioRecording ? "bg-red-600" : "bg-white/6"
-          }`}
-          title={isAudioRecording ? "Stop audio recording" : "Record audio"}
+          className="p-3 rounded-md bg-white/6 hover:bg-white/12"
+          onClick={() => {
+            pushMessage({
+              id: uid(),
+              from: "me",
+              type: "text",
+              content: "(voice message)",
+              ts: Date.now(),
+            });
+            setTimeout(
+              () =>
+                pushMessage({
+                  id: uid(),
+                  from: "ai",
+                  type: "text",
+                  content: "(voice reply)",
+                  ts: Date.now(),
+                }),
+              700
+            );
+          }}
         >
-          {isAudioRecording ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="white" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="white" viewBox="0 0 24 24">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" x2="12" y1="19" y2="22"/>
-            </svg>
-          )}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" x2="12" y1="19" y2="22" />
+          </svg>
         </button>
-
 
         {/* Video record / delete button */}
         <div className="flex gap-2 items-center">
           <button
             onClick={() => (isRecording ? stopRecording() : startRecording())}
-            className={`p-3 rounded-md cursor-pointer ${
+            className={`p-3 rounded-md ${
               isRecording ? "bg-red-600" : "bg-white/6"
             }`}
             title={isRecording ? "Stop recording" : "Start recording"}
