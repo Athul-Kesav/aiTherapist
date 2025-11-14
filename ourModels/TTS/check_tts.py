@@ -1,18 +1,16 @@
-from flask import Flask, request, jsonify,render_template_string,Response
-import os
-import uuid
-from pathlib import Path
-from moviepy import VideoFileClip
-from inference_vit import predict_emotion_vit
-from inference_wav2vec2 import predict_emotion_and_text_wav2vec2
-from frame_utils import extract_frames
-from collections import Counter
+# app.py
+# Minimal Flask frontend that sends text to the Chatterbox HF Space and streams back audio.
+# Uses a public sample audio (no uploads). Edit TEXT only if you want to default text.
+#
+# Requirements:
+#   pip install flask gradio_client requests
+
+from flask import Flask, render_template_string, request, Response, jsonify
 from gradio_client import Client, handle_file
 from pathlib import Path
 import base64, requests, mimetypes, os
 
 app = Flask(__name__)
-PORT = 5173
 
 # ---------- CONFIG: change only if needed ----------
 HF_SPACE = "ResembleAI/Chatterbox"   # Hugging Face Space used
@@ -27,6 +25,65 @@ API_NAME = "/generate_tts_audio"
 DOWNLOAD_DIR = "./downloads"  # where gradio_client will place downloaded files
 # ---------------------------------------------------
 
+INDEX_HTML = """
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Simple Chatterbox TTS</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; }
+      textarea { width: 100%; height: 120px; font-size: 1rem; }
+      button { padding: 0.6rem 1rem; font-size: 1rem; margin-top: 0.5rem; }
+      audio { display:block; margin-top:1rem; width: 100%; }
+      .status { margin-top: 0.6rem; color: #555; }
+    </style>
+  </head>
+  <body>
+    <h2>Chatterbox TTS — simple frontend</h2>
+    <p>Type the text you want spoken below and click <b>Synthesize</b>.</p>
+    <textarea id="text">Hello — this is a quick test.</textarea>
+    <br/>
+    <button id="synth">Synthesize</button>
+    <div class="status" id="status"></div>
+    <audio id="player" controls></audio>
+
+    <script>
+      document.getElementById("synth").onclick = async () => {
+        const text = document.getElementById("text").value.trim();
+        if (!text) return alert("Enter some text first.");
+        const status = document.getElementById("status");
+        const player = document.getElementById("player");
+        status.textContent = "Requesting synthesis...";
+        player.src = "";
+
+        try {
+          const resp = await fetch("/synthesize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text })
+          });
+          if (!resp.ok) {
+            const txt = await resp.text();
+            status.textContent = "Error: " + resp.status + " — " + txt;
+            return;
+          }
+          // Response is an audio blob. Play it.
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          player.src = url;
+          player.play().catch(()=>{/* autoplay may be blocked */});
+          status.textContent = "Playing generated audio.";
+          player.onended = () => { URL.revokeObjectURL(url); status.textContent = "Done."; };
+        } catch (err) {
+          console.error(err);
+          status.textContent = "Request failed: " + err.message;
+        }
+      };
+    </script>
+  </body>
+</html>
+"""
 
 def ensure_download_dir():
     Path(DOWNLOAD_DIR).mkdir(parents=True, exist_ok=True)
@@ -82,65 +139,9 @@ def result_to_bytes_and_mime(result, download_dir=DOWNLOAD_DIR):
 
     raise RuntimeError(f"Unhandled model result type: {type(result)} | value: {str(result)[:300]}")
 
-
-@app.route("/", methods=["GET"])
-def root():
-    return jsonify({"message": "Welcome to the Emotion Analysis API!"})
-
-@app.route("/analyze", methods=["POST"])
-def analyze_video():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-    
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "Empty filename"}), 400
-
-    temp_id = str(uuid.uuid4())
-    os.makedirs("temp", exist_ok=True)
-    video_path = f"temp/{temp_id}.mp4"
-    audio_path = f"temp/{temp_id}.wav"
-
-    try:
-        # Save video file
-        file.save(video_path)
-
-        # Extract audio from video
-        clip = VideoFileClip(video_path)
-        clip.audio.write_audiofile(audio_path, logger=None)  # disable verbose logs
-        clip.close() 
-
-        # Extract frames
-        frame_paths = extract_frames(video_path, temp_id)
-
-        # Face Emotion
-        face_results = [predict_emotion_vit(fp) for fp in frame_paths]
-        face_emotions = [res['emotion'] for res in face_results]
-        face_confidences = [res['confidence'] for res in face_results]
-
-        # Voice Emotion + Transcription
-        voice_result = predict_emotion_and_text_wav2vec2(audio_path)
-
-        # Aggregate (most common emotion)
-        final_face_emotion = Counter(face_emotions).most_common(1)[0][0] if face_emotions else "unknown"
-        avg_face_conf = sum(face_confidences)/len(face_confidences) if face_confidences else 0
-
-        return jsonify({
-            "face_emotion": final_face_emotion,
-            "avg_confidence": round(avg_face_conf, 2),
-            "voice_emotion": voice_result.get("emotion", "unknown"),
-            "transcription": voice_result.get("transcript", "")
-        })
-
-    finally:
-        # Cleanup temp files
-        if os.path.exists(video_path):
-            os.remove(video_path)
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
-        for fp in Path("temp").glob(f"{temp_id}_frame_*.jpg"):
-            os.remove(fp)
-
+@app.route("/")
+def index():
+    return render_template_string(INDEX_HTML)
 
 @app.route("/synthesize", methods=["POST"])
 def synth():
@@ -177,8 +178,5 @@ def synth():
     # Return audio bytes (stream) with MIME
     return Response(audio_bytes, mimetype=(mime or "audio/mpeg"))
 
-
 if __name__ == "__main__":
-    print("App running on port ", PORT)
-    app.run(host="0.0.0.0", port=PORT, debug=False)
-    
+    app.run(debug=True, port=5000)

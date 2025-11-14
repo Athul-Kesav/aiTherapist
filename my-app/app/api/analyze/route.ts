@@ -5,7 +5,6 @@ import axios from "axios";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import FormData from "form-data";
 
 
 type CustomError = Error & {
@@ -34,7 +33,7 @@ function withCors(res: NextResponse) {
   return res;
 }
 
-async function callChatterboxTTS(text: string, audioPromptPath?: string) {
+/* async function callChatterboxTTS(text: string, audioPromptPath?: string) {
   const form = new FormData();
 
   form.append("text_input", text);
@@ -65,7 +64,7 @@ async function callChatterboxTTS(text: string, audioPromptPath?: string) {
   );
 
   return Buffer.from(res.data); // return raw audio bytes
-}
+} */
 
 
 
@@ -187,8 +186,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     audioVideoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
     const audioVideoResponse = await fetch(`${audioVideoEndpoint}/analyze`, {
       method: "POST",
-      headers: typeof audioVideoFormData.getHeaders === "function" ? audioVideoFormData.getHeaders() : undefined,
-      body: audioVideoFormData as any,
+      body: audioVideoFormData,
     });
 
     const audioVideoData = await audioVideoResponse.json();
@@ -244,16 +242,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     const reply = llmResponse?.data?.response || "No response available";
 
     // 2. Convert to TTS
-    const audioBuffer = await callChatterboxTTS(reply, "Sample_Voice.mpeg");
+    // const audioBuffer = await callChatterboxTTS(reply, "Sample_Voice.mpeg");
 
     // 3. Convert audio to base64 so frontend can play it easily
-    const base64Audio = audioBuffer.toString("base64");
+    // const base64Audio = audioBuffer.toString("base64");
 
     // 4. Return both text + audio
     return withCors(
       NextResponse.json({
-        text: reply,
-        audioBase64: base64Audio,
+        response: reply,
+        // audioBase64: base64Audio,
         audioMime: "audio/mpeg"
       })
     );
