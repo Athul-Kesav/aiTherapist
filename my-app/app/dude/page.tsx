@@ -81,6 +81,7 @@ function MessageBubble({
 }) {
   const isMe = msg.from === "me";
 
+
   return (
     <motion.div
       layout
@@ -222,6 +223,12 @@ export default function DudeChat() {
   const [recordedURL, setRecordedURL] = useState<string | null>(null); // preview for unsent recording
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
 
+  // Audio Recording States
+  const [isAudioRecording, setIsAudioRecording] = useState(false);
+  const audioRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+
   // UI
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null); // modal
@@ -272,6 +279,39 @@ export default function DudeChat() {
     }
   }, [isRecording]);
 
+  async function startAudioRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+      };
+
+      audioRecorderRef.current = recorder;
+      recorder.start();
+
+      setIsAudioRecording(true);
+    } catch (err) {
+      console.error("Audio recording failed", err);
+    }
+  }
+
+  function stopAudioRecording() {
+    if (audioRecorderRef.current) {
+      audioRecorderRef.current.stop();
+      setIsAudioRecording(false);
+    }
+  }
+
+
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -298,6 +338,7 @@ export default function DudeChat() {
       setIsRecording(false);
     }
   }
+
 
   function stopRecording() {
     const recorder = mediaRecorderRef.current;
@@ -427,6 +468,54 @@ export default function DudeChat() {
       return;
     }
 
+    // --- AUDIO MESSAGE SEND ---
+    if (audioBlob) {
+      const myMsg: Message = {
+        id: uid(),
+        from: "me",
+        type: "text", // or type: "audio" if you want
+        content: "(voice message)",
+        ts: Date.now(),
+      };
+      pushMessage(myMsg);
+
+      const form = new FormData();
+      form.append("file", audioBlob, "recorded_audio.webm");
+
+      setAudioBlob(null);
+
+      setIsAwaitingResponse(true);
+      try {
+        const res = await fetch(BACKEND_ANALYZE, {
+          method: "POST",
+          body: form,
+        });
+        const resJson = await res.json();
+
+        pushMessage({
+          id: uid(),
+          from: "ai",
+          type: "text",
+          content: resJson?.text || "(no response)",
+          ts: Date.now(),
+          audioBase64: resJson?.audioBase64 || undefined,
+        });
+      } catch (err) {
+        console.error("Failed to send audio", err);
+        pushMessage({
+          id: uid(),
+          from: "ai",
+          type: "text",
+          content: "Error analyzing audio.",
+          ts: Date.now(),
+        });
+      } finally {
+        setIsAwaitingResponse(false);
+      }
+
+      return;
+    }
+
     if (textPrompt.trim()) {
       const payloadText = textPrompt.trim();
       const myMsg: Message = {
@@ -458,7 +547,7 @@ export default function DudeChat() {
           id: uid(),
           from: "ai",
           type: "text",
-          content: "Error contacting server.",
+          content: "Text parse error",
           ts: Date.now(),
         });
       }
@@ -548,49 +637,35 @@ export default function DudeChat() {
         />
 
         {/* Voice stub (keeps original look) */}
+        {/* Audio record button */}
         <button
-          className="p-3 rounded-md bg-white/6 hover:bg-white/12"
-          onClick={() => {
-            pushMessage({
-              id: uid(),
-              from: "me",
-              type: "text",
-              content: "(voice message)",
-              ts: Date.now(),
-            });
-            setTimeout(
-              () =>
-                pushMessage({
-                  id: uid(),
-                  from: "ai",
-                  type: "text",
-                  content: "(voice reply)",
-                  ts: Date.now(),
-                }),
-              700
-            );
-          }}
+          onClick={() =>
+            isAudioRecording ? stopAudioRecording() : startAudioRecording()
+          }
+          className={`p-3 rounded-md cursor-pointer ${
+            isAudioRecording ? "bg-red-600" : "bg-white/6"
+          }`}
+          title={isAudioRecording ? "Stop audio recording" : "Record audio"}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" x2="12" y1="19" y2="22" />
-          </svg>
+          {isAudioRecording ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="white" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="white" viewBox="0 0 24 24">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" x2="12" y1="19" y2="22"/>
+            </svg>
+          )}
         </button>
+
 
         {/* Video record / delete button */}
         <div className="flex gap-2 items-center">
           <button
             onClick={() => (isRecording ? stopRecording() : startRecording())}
-            className={`p-3 rounded-md ${
+            className={`p-3 rounded-md cursor-pointer ${
               isRecording ? "bg-red-600" : "bg-white/6"
             }`}
             title={isRecording ? "Stop recording" : "Start recording"}
