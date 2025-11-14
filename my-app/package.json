@@ -11,11 +11,13 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@gradio/client": "^2.0.0-dev.1",
     "@lottiefiles/dotlottie-react": "^0.17.4",
     "@lottiefiles/dotlottie-web": "^0.54.0",
     "axios": "^1.8.2",
     "dotenv": "^16.4.7",
     "framer-motion": "^12.4.10",
+    "lucide-react": "^0.553.0",
     "next": "^15.5.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -187,7 +187,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     audioVideoFormData.append("file", new Blob([videoBuffer], { type: videoFile.type }), videoFile.name);
     const audioVideoResponse = await fetch(`${audioVideoEndpoint}/analyze`, {
       method: "POST",
-      body: audioVideoFormData,
+      headers: typeof audioVideoFormData.getHeaders === "function" ? audioVideoFormData.getHeaders() : undefined,
+      body: audioVideoFormData as any,
     });
 
     const audioVideoData = await audioVideoResponse.json();
